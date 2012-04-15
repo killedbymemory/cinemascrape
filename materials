@@ -1,0 +1,19 @@
+how to scrape web pages with nodejs and jquery
+http://net.tutsplus.com/tutorials/javascript-ajax/how-to-scrape-web-pages-with-node-js-and-jquery/
+
+jsdom at github
+jsdom process html response from 'request', and we can also attach arbitrary javascript into it (such as jquery).
+https://github.com/tmpvar/jsdom
+
+request module at github
+curl 'replacement' as it responsible to fetch content, we can also modify request header, etc.
+https://github.com/mikeal/request
+
+nodejs modules, mandatory i guess
+http://nodejs.org/docs/v0.3.1/api/all.html#modules
+
+express web server
+http://expressjs.com/guide.html
+
+'middleware' request parameters rule
+https://github.com/visionmedia/express-params
