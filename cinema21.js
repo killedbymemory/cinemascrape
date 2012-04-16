@@ -45,6 +45,60 @@ function Cinema21(req, res) {
 	};
 }
 
+/**
+ * Get available cities
+ *
+ * GET http://localhost:3000/cinema21/cities
+ *
+ * @author killedbymemory <leonardo@situmorang.net>
+ */
+Cinema21.prototype.cities = function() {
+	console.log('Cinema21::cities() called...');
+	var self = this;
+	self.request_param.uri += '/gui.list_city';
+
+	self.fetch(function(err, window){
+		console.log('jsdom handler. error: ', err);
+		var $ = window.jQuery;
+		var cities = [];
+
+		// first thing first, get current city
+		// err.. we actually able to fetch this from COOKIE response header ;)
+		var cityName = $('#box_title').html();
+		console.log('cityName :: 66', cityName);
+		cityName = cityName.match(/\s{1}([a-zA-Z]+)$/i); // "My City  Jakarta"
+		console.log('cityName.match :: 68', cityName);
+
+		if (cityName.length == 2) {
+			cityName = cityName[1];
+			console.log('self.getCityId():', self.getCityId());
+			cities.push([self.getCityId(), cityName]);
+		}
+	
+		// add the rest of them
+		$('#box_content ol').each(function(index, element){
+			var $element = $(element);
+			console.log('element id: ', $element.attr('id'));
+			if ($element.attr('id') == 'menu_ol_arrow') {
+				console.log('element id correct');
+				var $city = $('li a', $element);
+				var href = $city.attr('href');
+				console.log('a.href 82:', href);
+
+				// "gui.list_theater?sid=&city_id=32"
+				console.log(href.match(/city_id=(\d{1,2})/));
+				console.log('length: ', href.match(/city_id=(\d{1,2})/).length);
+				href = href.match(/city_id=(\d{1,2})/);
+				if (href.length == 2) {
+					var cityId = parseInt(href[1]);
+					var cityName = $city.html();
+					cities.push([cityId, cityName]);
+				}
+			}
+		});
+
+		self.res.send(cities);
+	});
 };
 
 

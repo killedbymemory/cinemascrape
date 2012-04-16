@@ -27,6 +27,9 @@ app.configure('production', function(){
 });
 
 // Routes
+app.get('/cinema21/cities', function(req, res){
+	cinema21(req, res).cities();
+});
 
 });
 
