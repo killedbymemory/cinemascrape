@@ -1,0 +1,35 @@
+GET cinema21/cities
+get available cities
+
+GET cinema21/coming-soon
+get 'coming soon' movies
+
+GET cinema21/city/10/now-playing
+get 'now playing' movies in certain city
+
+GET cinema21/city/10/theaters
+get available theater in certain city
+
+GET cinema21/theater/1
+get theater detail (address, latitude longitude, phone number, ticket price)
+
+GET cinema21/theater/1/now-playing
+get 'now playing' movies on certain theater
+
+GET cinema21/movie/1
+get movie detail, sinopsis
+
+GET cinema21/movie/1/playing-at
+return list of theater who play the movie
+
+GET cinema21/movie/1/thumbs-up
+get up vote counter
+
+PUT cinema21/movie/1/thumbs-up
+increase up vote counter by 1
+
+GET cinema21/movie/1/thumbs-down
+get down vote counter
+
+PUT cinema21/movie/1/thumbs-down
+decrease down vote coutner

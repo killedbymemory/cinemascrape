@@ -2,14 +2,13 @@
 /**
  * Module dependencies.
  */
-
-var express = require('express')
-  , routes = require('./routes');
+var express = require('express'),
+		routes = require('./routes'),
+		cinema21 = require('./cinema21');
 
 var app = module.exports = express.createServer();
 
 // Configuration
-
 app.configure(function(){
   app.set('views', __dirname + '/views');
   app.set('view engine', 'jade');
@@ -28,23 +27,7 @@ app.configure('production', function(){
 });
 
 // Routes
-app.get('/cinema21', function(req, res){
-	var cinema21 = require('./cinema21');
-	console.log(cinema21);
 
-	console.log(req.query);	
-
-	var action = req.param('action');
-
-	switch(action) {
-		case 'now-playing':
-			new cinema21(res).now_playing();
-			break;
-
-		case 'list-city':
-			output = 'list available city';
-			break;
-	}
 });
 
 //*
