@@ -27,10 +27,15 @@ app.configure('production', function(){
 });
 
 // Routes
+// todo:
+// - implement a better routing
+//   consult this: http://expressjs.com/guide.html#passing-route%20control
 app.get('/cinema21/cities', function(req, res){
 	cinema21(req, res).cities();
 });
 
+app.get('/cinema21/coming-soon', function(req, res){
+	cinema21(req, res).coming_soon();
 });
 
 //*

@@ -101,6 +101,59 @@ Cinema21.prototype.cities = function() {
 	});
 };
 
+Cinema21.prototype.coming_soon = function() {
+	console.log('Cinema21::coming_soon() called...');
+
+	// this is a private variable
+	// -- a closure, to be exact
+	// it will act as a reference to Cinema21 instance
+	var self = this;
+	self.request_param.uri += '/gui.list_movie?order=2';
+
+	self.fetch(function(err, window){
+		var $ = window.jQuery;
+		var movies = [];
+
+		$('#box_content ol#menu_ol_arrow li').each(function(index, element){
+			var $element = $(element);
+			var $movie = $('a', $element);
+			var href = $movie.attr('href');
+			console.log('a.href 121:', href);
+
+			// gui.movie_details?sid=&movie_id=12DINE&order=2&find_by=1
+			// 'coming soon' movie comes with 'order=2'
+			// extract movie_id, order, and find_by
+			// 'gui.movie_details?sid=&movie_id=12DINE&order=2&find_by=1'.split('&').splice(1)
+			// 
+			// strip everything before '?', split by '&' delimiter
+			// return everything except the first element
+			href = href.replace(/^.*\?/, '').split('&').splice(1);
+
+			var movie_structure = {
+				movie_id: null,
+				order: null,
+				find_by: null
+			};
+
+			console.log('138 :: href=', href);
+			$.each(href, function(index, value){
+				var params = value.split('='); // key=value
+				console.log('141 :: params after split =', params);
+
+				try {
+					movie_structure[params[0]] = params[1];
+				} catch (e) {
+					console.log(e);
+				}
+			});
+
+			movies.push(movie_structure);
+		});
+
+		self.res.send(movies);
+	});
+};
+
 
 Cinema21.prototype.now_playing = function() {
 	var self = this;
