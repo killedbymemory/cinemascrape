@@ -120,22 +120,25 @@ Cinema21.prototype.coming_soon = function() {
 			var href = $movie.attr('href');
 			console.log('a.href 121:', href);
 
+			var movie_structure = {
+				title: $movie.html(),
+				uri: href,
+				movie_id: null,
+				order: null,
+				find_by: null
+			};
+
 			// gui.movie_details?sid=&movie_id=12DINE&order=2&find_by=1
 			// 'coming soon' movie comes with 'order=2'
+			//
 			// extract movie_id, order, and find_by
 			// 'gui.movie_details?sid=&movie_id=12DINE&order=2&find_by=1'.split('&').splice(1)
 			// 
 			// strip everything before '?', split by '&' delimiter
 			// return everything except the first element
 			href = href.replace(/^.*\?/, '').split('&').splice(1);
-
-			var movie_structure = {
-				movie_id: null,
-				order: null,
-				find_by: null
-			};
-
 			console.log('138 :: href=', href);
+
 			$.each(href, function(index, value){
 				var params = value.split('='); // key=value
 				console.log('141 :: params after split =', params);
