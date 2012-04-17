@@ -6,7 +6,7 @@ jsdom process html response from 'request', and we can also attach arbitrary jav
 https://github.com/tmpvar/jsdom
 
 request module at github
-curl 'replacement' as it responsible to fetch content, we can also modify request header, etc.
+curl 'replacement' as it's responsible to fetch content, we can also modify request header, etc.
 https://github.com/mikeal/request
 
 nodejs modules, mandatory i guess
@@ -17,3 +17,17 @@ http://expressjs.com/guide.html
 
 'middleware' request parameters rule
 https://github.com/visionmedia/express-params
+
+slice() javascript
+mozilla developer network
+https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/slice
+
+splice() javascript
+mozzila developer network
+https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/splice
+
+private properties using closure
+ps: i personally recommend to this resig's masterpiece
+http://ejohn.org/apps/learn/#54
+
+
