@@ -9,8 +9,8 @@ function Cinema21(req, res) {
 	this.request_param = {
 		uri:'http://m.21cineplex.com',
 		headers:{
-			'Referer':'http://m.21cineplex.com',
-			'Cookie':'city_id=10'
+			'referer':'http://m.21cineplex.com',
+			'cookie':'city_id=10'
 		}
 	};
 
@@ -248,6 +248,7 @@ Cinema21.prototype.now_playing = function() {
 
 			self.res.send(nowPlaying);
 	});
+};
 
 function cinema21(req, res) {
 	var r = new Cinema21(req, res);
