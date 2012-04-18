@@ -38,20 +38,20 @@ app.get('/cinema21/coming-soon', function(req, res){
 	cinema21(req, res).coming_soon();
 });
 
-// List now-playing movies filtered by city
-// http://localhost:3000/cinema21/city/1/now-playing
+// http://localhost:3000/cinema21/city/1
+// http://localhost:3000/cinema21/city/1/
+// return city information, now-playing movies, and list of theater
+// within the city
 //
-// List available theater within a city
-// http://localhost:3000/cinema21/city/10/theater
-app.get(/^\/cinema21\/city\/(\d{1,2})\/(now-playing|theater){1}(?:\/)?$/, function(req, res){
+// http://localhost:3000/cinema21/theater/1
+// http://localhost:3000/cinema21/theater/1/
+// return theater information, now-playing movies
+app.get(/^\/cinema21\/(city|theater)\/(\d{1,4})(?:\/)?$/, function(req, res){
 	var cinema21Obj = cinema21(req, res);
-	try {
-		var cityId = req.params[0];
-		var action = req.params[1];
-		action = action.replace('-', '_');
-		console.log('action name:', action);
 
-		cinema21Obj.setCityId(cityId);
+	try {
+		var action = req.params[0];
+		var id = req.params[1];
 
 		// in javascript, property (either method or attribute)
 		// is accessible using brackets.
@@ -62,11 +62,11 @@ app.get(/^\/cinema21\/city\/(\d{1,2})\/(now-playing|theater){1}(?:\/)?$/, functi
 		// on runtime. 
 		//
 		// call method in detail: 
-		// https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function/call
+		// 1] https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function/call
 		//
 		// first argument supplied into call,
 		// will be act as 'this' within the method (context)
-		cinema21Obj[action].call(cinema21Obj);
+		cinema21Obj[action].call(cinema21Obj, id);
 	} catch (e) {
 		console.log(e);
 	}

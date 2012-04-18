@@ -4,6 +4,9 @@ var request = require('request'),
 
 
 function Cinema21(req, res) {
+	// private variable, reference to Cinema21 object
+	var self = this;
+
 	this.req = req;
 	this.res = res;
 	this.request_param = {
@@ -14,10 +17,14 @@ function Cinema21(req, res) {
 		}
 	};
 
+	this.models = {
+		city:null,
+		theater:null,
+		movie:null
+	};
+
 	// private variable
-	var city_id = 10; // Jakarta
-	console.log('Cinema21 city_id:', city_id);
-	console.log('Cinema21 this.city_id:', this.city_id);
+	var city_id = 10; // Jakarta, by default
 
 	this.setCityId = function(id) {
 		city_id = id;
@@ -25,6 +32,44 @@ function Cinema21(req, res) {
 
 	this.getCityId = function() {
 		return city_id;
+	};
+
+	/**
+	 * Get model instance
+	 *
+	 * Valid model are: movie, theater, city
+	 *
+	 * @param string name model name
+	 * @param function modelClass model class
+	 * @return mixed null, when model not found. otherwise an Object
+	 */ 
+	this.getModel = function(modelName, modelClass) {
+		var model = null;
+
+		try {
+			if (!(this.models[modelName] instanceof modelClass)) {
+				console.log('No ' + modelName + ' model instance has been made.');
+				this.models[modelName] = new modelClass(this);
+			} else {
+				console.log(modelName + ' already instantiated.');
+			}
+
+			model = this.models[modelName];
+		} catch (e) {}
+
+		return model;
+	};
+
+	this.getCity = function() {
+		return this.getModel('city', City);
+	};
+
+	this.getMovie = function() {
+		return this.getModel('movie', Movie);
+	};
+
+	this.getTheater = function() {
+		return this.getModel('theater', Theater);
 	};
 
 	this.fetch = function(jsdomCallback) {
@@ -208,11 +253,10 @@ Cinema21.prototype.now_playing = function() {
 			var cityName = $('#box_content div#box_title:last').html();
 
 			// "Playing at Ujung Pandang"
-			if (cityName = cityName.match(/Playing at ([a-zA-Z\ ]+)$/i)) {
-				if (cityName.length && (cityName.length == 2)) {
-					found = true;
-					cityName = cityName[1];
-				}
+			cityName = cityName.match(/Playing at ([a-zA-Z\ ]+)$/i);
+			if (cityName.length && (cityName.length == 2)) {
+				found = true;
+				cityName = cityName[1];
 			}
 
 			if (!found) {
@@ -249,6 +293,124 @@ Cinema21.prototype.now_playing = function() {
 			self.res.send(nowPlaying);
 	});
 };
+
+Cinema21.prototype.city = function(id) {
+	var self = this;
+	self.setCityId(id);
+
+	self.fetch(function(err, window){
+			var $ = window.jQuery;
+
+			// get city name
+			var found = false;
+
+			// "Playing at Ujung Pandang"
+			var cityName = $('#box_content div#box_title:last').html();
+			cityName = cityName.match(/Playing at ([a-zA-Z\ ]+)$/i);
+			if (cityName.length && (cityName.length == 2)) {
+				found = true;
+				cityName = cityName[1];
+			}
+
+			if (!found) {
+				caller.res.send(404);
+				return;
+			}
+
+			// we are at correct result page
+			// lets fill response...
+			var response = {
+				city: {},
+				movies: [],
+				theaters: []
+			};
+
+			var city = self.getCity();
+			city.setId(self.getCityId());
+			city.$ = $;
+
+			response.city = city.getDetail();
+			response.movies = city.getNowPlaying();
+			response.theaters = city.getTheaters();
+
+			self.res.send(response);
+	});
+};
+
+/**
+ * City model
+ *
+ * @author Leonardo Situmorang <leonardo@situmorang.net>
+ *
+ * @param Cinema21 caller
+ */
+function City(caller) {
+	console.log('create new City instance');
+
+	var self = this;
+	var id;
+
+	// hold reference to jQuery
+	this.$;
+
+	this.setId = function(cityId) {
+		id = cityId;
+	}
+
+	this.getId = function() {
+		return id;
+	}
+
+	this.getDetail = function() {
+		return {
+			id: 10,
+			name: "Jakarta"
+		};
+	};
+
+	this.getNowPlaying = function() {
+		var movies = [];
+
+		// lets fill movies array
+		var $ = this.$;
+		$('#box_content ol:last li').each(function(){
+			var $movie = $('a', this);
+
+			var movie = {
+				id: null,
+				name: null
+			};
+
+			caller.fillMovieDetail($movie, movie_structure);
+
+			nowPlaying.movies.push(movie_structure);
+		});
+
+		movies.push({
+			id: 'BLABLA001',
+			name: 'Battleship'
+		});
+
+		movies.push({
+			id: 'BURPBURP',
+			name: 'Sinking Ship'
+		});
+
+		return movies;
+	};
+
+	this.getTheaters = function() {
+		var theaters = [];
+
+		theaters.push({
+			id: 'PIM',
+			name: 'Pondok Indah Mall',
+			location: 'Jln. Pondok Pinang Jakarta Selatan'
+		});
+
+		return theaters;
+	};
+}
 
 function cinema21(req, res) {
 	var r = new Cinema21(req, res);

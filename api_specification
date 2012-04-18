@@ -4,20 +4,15 @@ get available cities
 GET cinema21/coming-soon
 get 'coming soon' movies
 
-GET cinema21/city/10/now-playing
-get 'now playing' movies in certain city
-
-GET cinema21/city/10/theaters
-get available theater in certain city
+GET cinema21/city/10
+return city information, 'now playing' movies, and list of theater
 
 GET cinema21/theater/1
 get theater detail (address, latitude longitude, phone number, ticket price)
+it's also return 'now playing' movies as well
 
-GET cinema21/theater/1/now-playing
-get 'now playing' movies on certain theater
-
-GET cinema21/movie/1
-get movie detail, sinopsis
+GET cinema21/movie/1/city/10
+get movie detail and list of theater who run the movie filtered by city_id
 
 GET cinema21/movie/1/playing-at
 return list of theater who play the movie
