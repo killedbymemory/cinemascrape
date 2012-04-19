@@ -567,7 +567,7 @@ function Theater(caller) {
 					id: $movie.attr('href').match(/movie_id=([0-9a-zA-Z]+)/)[1],
 					title: $movie.html(),
 					date: null,
-					times: [],
+					time: [],
 					price: null,
 					mtix: false
 				};
@@ -586,17 +586,20 @@ function Theater(caller) {
 			$('p', $this).each(function(index, element){
 				if ($(this).hasClass('p_date')) {
 					// Date: Kamis,19-04-2012 (MTIX)
-					movie.date = $(this).text().match('[0-9]{2}-[0-9]{2}-201[2-9]');
+					movie.date = $(this).text().match(/[0-9]{2}-[0-9]{2}-201[2-9]/);
+
+					var mtix = $(this).text().match(/\(MTIX\)$/);
+					(mtix && (movie.mtix = (mtix.length === 1)));
 					return;
 				}
 
 				if ($(this).hasClass('p_time')) {
 					// [12:30] [14:40] [16:50] [19:00] [21:10]
-					var times = $(this).text().trim().split(' ');
-					if (times && (times.length > 0)) {
-						for(var i in times) {
-							var time = times[i].replace(/[\[\]]/g,'');
-							movie.times.push(time);
+					var occurrence = $(this).text().trim().split(' ');
+					if (occurrence && (occurrence.length > 0)) {
+						for(var i in occurrence) {
+							var time = occurrence[i].replace(/[\[\]]/g,'');
+							movie.time.push(time);
 						}
 					}
 					return;
@@ -610,6 +613,7 @@ function Theater(caller) {
 					} else {
 						console.log('No movie ticket price');
 					}
+					return;
 				}
 			});
 		});
