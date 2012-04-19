@@ -298,6 +298,8 @@ Cinema21.prototype.city = function(id) {
 	var self = this;
 	self.setCityId(id);
 
+	self.request_param.uri += '/gui.list_theater?sid=&city_id=' + self.getCityId();
+
 	self.fetch(function(err, window){
 			var $ = window.jQuery;
 
@@ -327,6 +329,7 @@ Cinema21.prototype.city = function(id) {
 
 			var city = self.getCity();
 			city.setId(self.getCityId());
+			city.setName(cityName);
 			city.$ = $;
 
 			response.city = city.getDetail();
@@ -349,22 +352,35 @@ function City(caller) {
 
 	var self = this;
 	var id;
+	var name;
 
 	// hold reference to jQuery
 	this.$;
 
 	this.setId = function(cityId) {
 		id = cityId;
-	}
+	};
 
 	this.getId = function() {
 		return id;
-	}
+	};
 
+	this.setName = function(cityName) {
+		name = cityName;
+	};
+
+	this.getName = function() {
+		return name;
+	};
+
+	/**
+	 * City detail
+	 * as for now its only return id and name
+	 */
 	this.getDetail = function() {
 		return {
-			id: 10,
-			name: "Jakarta"
+			id: this.getId(),
+			name: this.getName()
 		};
 	};
 
@@ -373,28 +389,18 @@ function City(caller) {
 
 		// lets fill movies array
 		var $ = this.$;
-		$('#box_content ol:last li').each(function(){
-			var $movie = $('a', this);
+		
+		try {
+			$('#box_content ol:last li').each(function(){
+				var $movie = $('a', this);
+				var movie = {
+					id: $movie.attr('href').match(/movie_id=([0-9a-zA-Z]+)/)[1],
+					title: $movie.html()
+				};
 
-			var movie = {
-				id: null,
-				name: null
-			};
-
-			caller.fillMovieDetail($movie, movie_structure);
-
-			nowPlaying.movies.push(movie_structure);
-		});
-
-		movies.push({
-			id: 'BLABLA001',
-			name: 'Battleship'
-		});
-
-		movies.push({
-			id: 'BURPBURP',
-			name: 'Sinking Ship'
-		});
+				movies.push(movie);
+			});
+		} catch (e) {}
 
 		return movies;
 	};
@@ -402,11 +408,44 @@ function City(caller) {
 	this.getTheaters = function() {
 		var theaters = [];
 
-		theaters.push({
-			id: 'PIM',
-			name: 'Pondok Indah Mall',
-			location: 'Jln. Pondok Pinang Jakarta Selatan'
-		});
+		var $ = this.$;
+
+		try {
+			// cinema21's mobile front-end developer must 
+			// be very lame as he/she ended-up misused 'id' attribute 
+			// to acted like 'class'
+			// well, i'm not saying that it does not work...
+			var theaterElements = $('#box_content ol');
+			theaterElements.each(function(index, element){
+				// last element of '#menu_ol_arrow' is not a theater entry
+				if (index === (theaterElements.length - 1)) {
+					return;
+				}
+
+				var $theater = $('li a', this);
+
+				// http://m.21cineplex.com/gui.list_schedule?sid=&cinema_id=BGRBOTA&find_by=2
+				var id = $theater.attr('href').match(/cinema_id\=([0-9a-zA-Z]+)/)[1];
+
+				// "BOTANI XXI<span class="txt_mtix">(MTIX)</span>"
+				var name = $theater.html().replace(/\<span.*span\>/, '');
+
+				var mtix = false;
+				try {
+					mtix = ($theater.html().match(/\(MTIX\)/i).length === 1);
+				} catch(e) {}
+
+				var theater = {
+					id: id,
+					name: name,
+					mtix: mtix
+				};
+
+				theaters.push(theater);
+			});
+		} catch (e) {
+			console.log(e);
+		}
 
 		return theaters;
 	};
