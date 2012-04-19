@@ -340,6 +340,37 @@ Cinema21.prototype.city = function(id) {
 	});
 };
 
+
+Cinema21.prototype.theater = function(id) {
+	var self = this;
+
+	self.request_param.uri += '/gui.list_schedule?sid=&find_by=2&cinema_id=' + id;
+
+	self.fetch(function(err, window){
+		var $ = window.jQuery;
+
+		var response = {
+			theater: {},
+			movies: [],
+		};
+
+		var theater = self.getTheater();
+		theater.setId(id);
+		theater.$ = $;
+
+		try {
+			response.theater = theater.getDetail();
+			response.movies = theater.getNowPlaying();
+		} catch(e) {
+			console.log(e);
+			response = 404;
+		};
+
+		self.res.send(response);
+	});
+}
+
+
 /**
  * City model
  *
@@ -448,6 +479,142 @@ function City(caller) {
 		}
 
 		return theaters;
+	};
+}
+
+function Theater(caller) {
+	console.log('create new Theater instance');
+
+	var self = this;
+
+	var attributes = {
+		id: null,
+		name: null,
+		city: null,
+		address: null,
+		phone: null
+	};
+
+	this.setAttribute = function(name, value) {
+		attributes[name] = value;
+	};
+
+	this.getAttribute = function(name) {
+		try {
+			return attributes[name];
+		} catch (e) {
+			console.log('No such attribute exist: ' + name, e);
+			return undefined;
+		}
+	};
+
+	this.$;
+
+	this.setId = function(theaterId) {
+		this.setAttribute('id', theaterId);
+	};
+
+	this.getDetail = function() {
+		var $ = this.$;
+
+		var $theaterInfo = $('#box_content table td');
+
+		if ($theaterInfo.length === 2) {
+			debugger;
+			// BOTANI XXI - Ambon
+			// note that city name is optional
+			var nameAndCity = /^([0-9a-zA-Z\ ]+) \- ([0-9a-zA-Z\ ]+)?$/;
+			var theaterName = $($theaterInfo[0]).html().match(nameAndCity);
+			if (theaterName && (theaterName.length > 0)) {
+				this.setAttribute('name', theaterName[1]);
+
+				if (theaterName[2] != undefined) {
+					this.setAttribute('city', theaterName[2]);
+				} else {
+					console.log('No city name');
+				}
+			} else {
+				console.log('No theater name nor city');
+			}
+
+			// BOTANI SQUARE LT. 2, JL. RAYA PAJAJARAN
+			// TELEPON : (0251) 840 0821
+			var addressAndPhone = $($theaterInfo[1]).text().split("\r\n");
+			if (addressAndPhone && (addressAndPhone.length === 2)) {
+				this.setAttribute('address', addressAndPhone[0]);
+				this.setAttribute('phone', addressAndPhone[1].replace(/.*TELEPON : /, ''));
+			} else {
+				console.log('No theater address nor phone');
+			}
+		}
+
+		return attributes;
+	};
+
+	this.getNowPlaying = function() {
+		var movies = [];
+
+		// lets fill movies array
+		var $ = this.$;
+		
+		// get movie
+		$('#box_content ol').each(function(index, element){
+			var $this = $(this);
+
+			if ($this.attr('id') == 'menu_ol_schedule') {
+				var $movie = $('li a', $this);
+				var movie = {
+					id: $movie.attr('href').match(/movie_id=([0-9a-zA-Z]+)/)[1],
+					title: $movie.html(),
+					date: null,
+					times: [],
+					price: null,
+					mtix: false
+				};
+
+				movies.push(movie);
+			}
+		});
+
+		// get movie schedule
+		$('div.schedule_timeshow').each(function(index, element){
+			var $this = $(this);
+
+			// reference to movie object
+			var movie = movies[index];
+
+			$('p', $this).each(function(index, element){
+				if ($(this).hasClass('p_date')) {
+					// Date: Kamis,19-04-2012 (MTIX)
+					movie.date = $(this).text().match('[0-9]{2}-[0-9]{2}-201[2-9]');
+					return;
+				}
+
+				if ($(this).hasClass('p_time')) {
+					// [12:30] [14:40] [16:50] [19:00] [21:10]
+					var times = $(this).text().trim().split(' ');
+					if (times && (times.length > 0)) {
+						for(var i in times) {
+							var time = times[i].replace(/[\[\]]/g,'');
+							movie.times.push(time);
+						}
+					}
+					return;
+				}
+
+				if ($(this).hasClass('p_price')) {
+					// HTM: Rp.25,000
+					var price = $(this).html().match(/[1-9][0-9]\,[0-9]{3}$/);
+					if (price && price.length === 1) {
+						movie.price = parseInt(price[0].replace(',', ''));
+					} else {
+						console.log('No movie ticket price');
+					}
+				}
+			});
+		});
+
+		return movies;
 	};
 }
 

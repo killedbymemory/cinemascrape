@@ -7,9 +7,10 @@ get 'coming soon' movies
 GET cinema21/city/10
 return city information, 'now playing' movies, and list of theater
 
-GET cinema21/theater/1
+GET cinema21/theater/1/[city/10]
 get theater detail (address, latitude longitude, phone number, ticket price)
 it's also return 'now playing' movies as well
+would be best if city_id is also supplied
 
 GET cinema21/movie/1/city/10
 get movie detail and list of theater who run the movie filtered by city_id
