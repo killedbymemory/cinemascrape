@@ -1,13 +1,13 @@
-GET cinema21/cities
+GET cinema21/cities *
 get available cities
 
-GET cinema21/coming-soon
+GET cinema21/coming-soon *
 get 'coming soon' movies
 
-GET cinema21/city/10
+GET cinema21/city/10 *
 return city information, 'now playing' movies, and list of theater
 
-GET cinema21/theater/1/[city/10]
+GET cinema21/theater/1/[city/10] *
 get theater detail (address, latitude longitude, phone number, ticket price)
 it's also return 'now playing' movies as well
 would be best if city_id is also supplied
