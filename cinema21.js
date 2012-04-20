@@ -74,8 +74,11 @@ function Cinema21(req, res) {
 
 	this.fetch = function(jsdomCallback) {
 		console.log('Cinema21::fetch() called...');
+		console.log('Request param: ', this.request_param);
 
 		request(this.request_param, function(err, response, body){
+			//console.log('Response header:', response);
+
 			if (err && respose.statusCode == 200) {
 				console.log('Request error.');
 			}
@@ -566,10 +569,7 @@ function Theater(caller) {
 				var movie = {
 					id: $movie.attr('href').match(/movie_id=([0-9a-zA-Z]+)/)[1],
 					title: $movie.html(),
-					date: null,
-					time: [],
-					price: null,
-					mtix: false
+					schedule: []
 				};
 
 				movies.push(movie);
@@ -578,18 +578,43 @@ function Theater(caller) {
 
 		// get movie schedule
 		$('div.schedule_timeshow').each(function(index, element){
+			debugger;
 			var $this = $(this);
 
 			// reference to movie object
 			var movie = movies[index];
+			var scheduleId = 0;
 
-			$('p', $this).each(function(index, element){
+			$('*', $this).each(function(index, element){
+				debugger;
+				if (movie.schedule[scheduleId] === undefined) {
+					var scheduleData = {
+						date: null,
+						time: [],
+						price: 0,
+						mtix: false
+					};
+
+					// create new schedule
+					movie.schedule.push(scheduleData);
+					console.log('Create new schedule.', movie.schedule);
+				}
+
+				// delimiter
+				if ($(this).hasClass('p_list')) {
+					// initialise / increment scheduleId
+					scheduleId++;
+					return;
+				}
+
+				var schedule = movie.schedule[scheduleId];
+
 				if ($(this).hasClass('p_date')) {
 					// Date: Kamis,19-04-2012 (MTIX)
-					movie.date = $(this).text().match(/[0-9]{2}-[0-9]{2}-201[2-9]/);
+					schedule.date = $(this).text().match(/[0-9]{2}-[0-9]{2}-201[2-9]/)[0];
 
 					var mtix = $(this).text().match(/\(MTIX\)$/);
-					(mtix && (movie.mtix = (mtix.length === 1)));
+					(mtix && (schedule.mtix = (mtix.length === 1)));
 					return;
 				}
 
@@ -599,8 +624,10 @@ function Theater(caller) {
 					if (occurrence && (occurrence.length > 0)) {
 						for(var i in occurrence) {
 							var time = occurrence[i].replace(/[\[\]]/g,'');
-							movie.time.push(time);
+							schedule.time.push(time);
 						}
+					} else {
+						console.log('No movie time(s)');
 					}
 					return;
 				}
@@ -609,7 +636,7 @@ function Theater(caller) {
 					// HTM: Rp.25,000
 					var price = $(this).html().match(/[1-9][0-9]\,[0-9]{3}$/);
 					if (price && price.length === 1) {
-						movie.price = parseInt(price[0].replace(',', ''));
+						schedule.price = parseInt(price[0].replace(',', ''));
 					} else {
 						console.log('No movie ticket price');
 					}
