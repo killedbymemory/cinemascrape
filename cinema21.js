@@ -1,6 +1,7 @@
 var request = require('request'),
 		url = require('url'),
-		jsdom = require('jsdom');
+		jsdom = require('jsdom'),
+		redis = require('redis');
 
 
 function Cinema21(req, res) {

@@ -33,3 +33,7 @@ http://ejohn.org/apps/learn/#54
 learn javascript with object graphs
 high quality series from howtonode.org 
 http://howtonode.org/object-graphs
+
+forever
+run script as daemon
+https://github.com/nodejitsu/forever
