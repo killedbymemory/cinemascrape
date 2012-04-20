@@ -543,7 +543,7 @@ function Theater(caller) {
 			// BOTANI SQUARE LT. 2, JL. RAYA PAJAJARAN
 			// TELEPON : (0251) 840 0821
 			var addressAndPhone = $($theaterInfo[1]).text().split("\r\n");
-			if (addressAndPhone && (addressAndPhone.length === 2)) {
+			if (addressAndPhone && (addressAndPhone.length >= 2)) {
 				this.setAttribute('address', addressAndPhone[0]);
 				this.setAttribute('phone', addressAndPhone[1].replace(/.*TELEPON : /, ''));
 			} else {
