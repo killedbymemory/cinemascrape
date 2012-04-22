@@ -1,6 +1,7 @@
 var request = require('request'),
 		url = require('url'),
-		jsdom = require('jsdom');
+		jsdom = require('jsdom'),
+		at_storage = require('at_storage');
 
 
 function Cinema21(req, res) {
@@ -78,6 +79,7 @@ function Cinema21(req, res) {
 
 		request(this.request_param, function(err, response, body){
 			//console.log('Response header:', response);
+			console.log(body);
 
 			if (err && respose.statusCode == 200) {
 				console.log('Request error.');
