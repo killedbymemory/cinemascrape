@@ -219,52 +219,76 @@ Cinema21.prototype.coming_soon = function() {
 	// -- a closure, to be exact
 	// it will act as a reference to Cinema21 instance
 	var self = this;
-	self.request_param.uri += '/gui.list_movie?order=2';
+	var movies = [];
 
-	self.fetch(function(err, window){
-		var $ = window.jQuery;
-		var movies = [];
+	function fetchComingSoon() {
+		self.request_param.uri += '/gui.list_movie?order=2';
 
-		$('#box_content ol#menu_ol_arrow li').each(function(index, element){
-			var $element = $(element);
-			var $movie = $('a', $element);
-			var href = $movie.attr('href');
-			console.log('a.href 121:', href);
+		self.fetch(function(err, window){
+			var $ = window.jQuery;
 
-			var movie_structure = {
-				title: $movie.html(),
-				uri: href,
-				movie_id: null,
-				order: null,
-				find_by: null
-			};
+			$('#box_content ol#menu_ol_arrow li').each(function(index, element){
+				var $element = $(element);
+				var $movie = $('a', $element);
+				var href = $movie.attr('href');
+				console.log('a.href 121:', href);
 
-			// gui.movie_details?sid=&movie_id=12DINE&order=2&find_by=1
-			// 'coming soon' movie comes with 'order=2'
-			//
-			// extract movie_id, order, and find_by
-			// 'gui.movie_details?sid=&movie_id=12DINE&order=2&find_by=1'.split('&').splice(1)
-			// 
-			// strip everything before '?', split by '&' delimiter
-			// return everything except the first element
-			href = href.replace(/^.*\?/, '').split('&').splice(1);
-			console.log('138 :: href=', href);
+				var movie_structure = {
+					title: $movie.html(),
+					uri: href,
+					movie_id: null,
+					order: null,
+					find_by: null
+				};
 
-			$.each(href, function(index, value){
-				var params = value.split('='); // key=value
-				console.log('141 :: params after split =', params);
+				// gui.movie_details?sid=&movie_id=12DINE&order=2&find_by=1
+				// 'coming soon' movie comes with 'order=2'
+				//
+				// extract movie_id, order, and find_by
+				// 'gui.movie_details?sid=&movie_id=12DINE&order=2&find_by=1'.split('&').splice(1)
+				// 
+				// strip everything before '?', split by '&' delimiter
+				// return everything except the first element
+				href = href.replace(/^.*\?/, '').split('&').splice(1);
+				console.log('138 :: href=', href);
 
-				try {
-					movie_structure[params[0]] = params[1];
-				} catch (e) {
-					console.log(e);
-				}
+				$.each(href, function(index, value){
+					var params = value.split('='); // key=value
+					console.log('141 :: params after split =', params);
+
+					try {
+						movie_structure[params[0]] = params[1];
+					} catch (e) {
+						console.log(e);
+					}
+				});
+
+				movies.push(movie_structure);
 			});
 
-			movies.push(movie_structure);
-		});
+			// store result to storage
+			console.log('store coming soon movies to redis');
+			var storage = at_storage().getClient();
+			storage.set('coming_soon', JSON.stringify(movies), function(){
+				console.log('redis response:', arguments);
+			});
 
-		self.res.send(movies);
+			self.res.send(movies);
+		});
+	}
+
+	// try to get 'coming soon' from redis
+	var storage = at_storage().getClient();
+	storage.get('coming_soon', function(err, result){
+		console.log('get "coming_soon" from redis. response:', arguments);
+		if (err || result === null) {
+			console.log('either error or "coming_soon" is not found. try fetch');
+			fetchComingSoon();
+		} else {
+			console.log('"coming_soon" found on redis');
+			movies = JSON.parse(result);
+			self.res.send(movies);
+		}
 	});
 };
 
