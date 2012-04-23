@@ -37,3 +37,12 @@ http://howtonode.org/object-graphs
 forever
 run script as daemon
 https://github.com/nodejitsu/forever
+
+redis
+http://redis.io
+http://redis.io/topics/data-types
+
+node-redis
+https://github.com/mranney/node_redis
+http://simonwillison.net/static/2010/redis-tutorial/
+http://howtonode.org/node-redis-fun

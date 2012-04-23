@@ -1,7 +1,7 @@
 var request = require('request'),
 		url = require('url'),
 		jsdom = require('jsdom'),
-		redis = require('redis');
+		at_storage = require('at_storage');
 
 
 function Cinema21(req, res) {
@@ -79,6 +79,7 @@ function Cinema21(req, res) {
 
 		request(this.request_param, function(err, response, body){
 			//console.log('Response header:', response);
+			//console.log(body);
 
 			if (err && respose.statusCode == 200) {
 				console.log('Request error.');
@@ -140,49 +141,74 @@ Cinema21.prototype.fillMovieDetail = function($movie, movie_structure) {
 Cinema21.prototype.cities = function() {
 	console.log('Cinema21::cities() called...');
 	var self = this;
-	self.request_param.uri += '/gui.list_city';
+	var cities = [];
 
-	self.fetch(function(err, window){
-		console.log('jsdom handler. error: ', err);
-		var $ = window.jQuery;
-		var cities = [];
+	function fetchCities() {
+		self.request_param.uri += '/gui.list_city';
 
-		// first thing first, get current city
-		// err.. we actually able to fetch this from COOKIE response header ;)
-		var cityName = $('#box_title').html();
-		console.log('cityName :: 66', cityName);
-		cityName = cityName.match(/\s{1}([a-zA-Z]+)$/i); // "My City  Jakarta"
-		console.log('cityName.match :: 68', cityName);
+		self.fetch(function(err, window){
+			//console.log('jsdom handler. error: ', err);
+			var $ = window.jQuery;
 
-		if (cityName.length == 2) {
-			cityName = cityName[1];
-			console.log('self.getCityId():', self.getCityId());
-			cities.push([self.getCityId(), cityName]);
-		}
-	
-		// add the rest of them
-		$('#box_content ol').each(function(index, element){
-			var $element = $(element);
-			console.log('element id: ', $element.attr('id'));
-			if ($element.attr('id') == 'menu_ol_arrow') {
-				console.log('element id correct');
-				var $city = $('li a', $element);
-				var href = $city.attr('href');
-				console.log('a.href 82:', href);
+			// first thing first, get current city
+			// err.. we actually able to fetch this from COOKIE response header ;)
+			var cityName = $('#box_title').html();
+			//console.log('cityName :: 66', cityName);
+			cityName = cityName.match(/\s{1}([a-zA-Z]+)$/i); // "My City  Jakarta"
+			//console.log('cityName.match :: 68', cityName);
 
-				// "gui.list_theater?sid=&city_id=32"
-				console.log(href.match(/city_id=(\d{1,2})/));
-				console.log('length: ', href.match(/city_id=(\d{1,2})/).length);
-				href = href.match(/city_id=(\d{1,2})/);
-				if (href.length == 2) {
-					var cityId = parseInt(href[1]);
-					var cityName = $city.html();
-					cities.push([cityId, cityName]);
-				}
+			if (cityName.length == 2) {
+				cityName = cityName[1];
+				//console.log('self.getCityId():', self.getCityId());
+				cities.push([self.getCityId(), cityName]);
 			}
-		});
+		
+			// add the rest of them
+			$('#box_content ol').each(function(index, element){
+				var $element = $(element);
+				//console.log('element id: ', $element.attr('id'));
+				if ($element.attr('id') == 'menu_ol_arrow') {
+					//console.log('element id correct');
+					var $city = $('li a', $element);
+					var href = $city.attr('href');
+					//console.log('a.href 82:', href);
 
-		self.res.send(cities);
+					// "gui.list_theater?sid=&city_id=32"
+					//console.log(href.match(/city_id=(\d{1,2})/));
+					//console.log('length: ', href.match(/city_id=(\d{1,2})/).length);
+					href = href.match(/city_id=(\d{1,2})/);
+					if (href.length == 2) {
+						var cityId = parseInt(href[1]);
+						var cityName = $city.html();
+						cities.push([cityId, cityName]);
+					}
+				}
+			});
+
+			// store result to storage (redis)
+			console.log('store cities to redis');
+			var redis = at_storage().getClient();
+			redis.set('cities', JSON.stringify(cities), function(){
+				console.log('redis response:', arguments);
+			});
+
+			self.res.send(cities);
+		});
+	}
+
+	// try to get cities from storage (redis)
+	console.log('try to get cities from redis');
+	var storage = at_storage().getClient();
+	storage.get('cities', function(err, result){
+		console.log('get "cities" from redis response:', arguments);
+		if (err || (result === null))  {
+			console.log('either error or no cities found from redis. try to fetch');
+			fetchCities();
+		} else {
+			console.log('cities record found from redis.');
+			cities = JSON.parse(result);
+			self.res.send(cities);
+		}
 	});
 };
 
@@ -355,7 +381,7 @@ Cinema21.prototype.theater = function(id) {
 
 		var response = {
 			theater: {},
-			movies: [],
+			movies: []
 		};
 
 		var theater = self.getTheater();
@@ -368,11 +394,11 @@ Cinema21.prototype.theater = function(id) {
 		} catch(e) {
 			console.log(e);
 			response = 404;
-		};
+		}
 
 		self.res.send(response);
 	});
-}
+};
 
 
 /**
