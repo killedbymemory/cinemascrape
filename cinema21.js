@@ -24,6 +24,9 @@ function Cinema21(req, res) {
 		movie:null
 	};
 
+	// storage client (default driver: redis)
+	var storageClient;
+
 	// private variable
 	var city_id = 10; // Jakarta, by default
 
@@ -71,6 +74,14 @@ function Cinema21(req, res) {
 
 	this.getTheater = function() {
 		return this.getModel('theater', Theater);
+	};
+
+	this.getStorageClient = function() {
+		if (storageClient == null) {
+			storageClient = at_storage().getClient();
+		}
+
+		return storageClient;
 	};
 
 	this.fetch = function(jsdomCallback) {
