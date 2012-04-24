@@ -107,42 +107,6 @@ function Cinema21(req, res) {
 }
 
 /**
- * Helper to fill movie object literal
- * with corresponding value from $movie
- *
- * @param jQuery $movie is a query object contain movie anchor
- * @param Object movie_structure an object literal
- */
-Cinema21.prototype.fillMovieDetail = function($movie, movie_structure) {
-	// variety of links:
-	// gui.movie_details?sid=&movie_id=12DINE&order=2&find_by=1
-	// gui.list_schedule?sid=&movie_id=12AOVR&find_by=1
-	// 
-	// ps: 'coming soon' link comes with 'order=2'
-	//
-	// extract movie_id, order, and find_by
-	// 'gui.movie_details?sid=&movie_id=12DINE&order=2&find_by=1'.split('&').splice(1)
-	// 
-	// strip everything before '?', split by '&' delimiter
-	// return everything except the first element
-	movie_structure['title'] = $movie.html();
-	var href = movie_structure['uri'] = $movie.attr('href');
-
-	href = href.replace(/^.*\?/, '').split('&').splice(1);
-
-	for(var index in href) {
-		var value = href[index];
-		var params = value.split('='); // key=value
-
-		try {
-			movie_structure[params[0]] = params[1];
-		} catch (e) {
-			console.log(e);
-		}
-	}
-};
-
-/**
  * Get available cities
  *
  * GET http://localhost:3000/cinema21/cities
@@ -307,62 +271,6 @@ Cinema21.prototype.coming_soon = function() {
 			movies = JSON.parse(result);
 			self.res.send(movies);
 		}
-	});
-};
-
-
-Cinema21.prototype.now_playing = function() {
-	console.log('Cinema21::now_playing() called...');
-
-	var self = this;
-	self.request_param.uri += '/gui.list_theater?sid=&city_id=' + self.getCityId();
-
-	self.fetch(function(err, window){
-			var $ = window.jQuery;
-
-			// get city name
-			var found = false;
-			var cityName = $('#box_content div#box_title:last').html();
-
-			// "Playing at Ujung Pandang"
-			cityName = cityName.match(/Playing at ([a-zA-Z\ ]+)$/i);
-			if (cityName.length && (cityName.length == 2)) {
-				found = true;
-				cityName = cityName[1];
-			}
-
-			if (!found) {
-				self.res.send(404);
-				return;
-			}
-
-			// output structure
-			var nowPlaying = {
-				city: {
-					id: self.getCityId(),
-					name: cityName
-				},
-				movies: []
-			};
-			
-			// lets fill movies array
-			$('#box_content ol:last li').each(function(){
-				var $movie = $('a', this);
-
-				var movie_structure = {
-					title: null,
-					uri: null,
-					movie_id: null,
-					order: null,
-					find_by: null
-				};
-
-				self.fillMovieDetail($movie, movie_structure);
-
-				nowPlaying.movies.push(movie_structure);
-			});
-
-			self.res.send(nowPlaying);
 	});
 };
 
