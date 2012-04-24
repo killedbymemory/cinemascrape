@@ -257,46 +257,38 @@ Cinema21.prototype.coming_soon = function() {
 			$('#box_content ol#menu_ol_arrow li').each(function(index, element){
 				var $element = $(element);
 				var $movie = $('a', $element);
-				var href = $movie.attr('href');
-				console.log('a.href 121:', href);
+				console.log($movie.html());
 
-				var movie_structure = {
-					title: $movie.html(),
-					uri: href,
-					movie_id: null,
-					order: null,
-					find_by: null
-				};
+				try {
+					var movie = {
+						id: $movie.attr('href').match(/movie_id=([0-9a-zA-Z]+)/)[1],
+						title: $movie.html(),
+						coming_soon: true
+					};
 
-				// gui.movie_details?sid=&movie_id=12DINE&order=2&find_by=1
-				// 'coming soon' movie comes with 'order=2'
-				//
-				// extract movie_id, order, and find_by
-				// 'gui.movie_details?sid=&movie_id=12DINE&order=2&find_by=1'.split('&').splice(1)
-				// 
-				// strip everything before '?', split by '&' delimiter
-				// return everything except the first element
-				href = href.replace(/^.*\?/, '').split('&').splice(1);
-				console.log('138 :: href=', href);
+					movies.push(movie);
+					console.log(movie);
 
-				$.each(href, function(index, value){
-					var params = value.split('='); // key=value
-					console.log('141 :: params after split =', params);
+					// store movie to storage
+					var key = ['movie', movie.id].join(':');
+					self.getStorageClient().hmset(key, movie, function(err, response){
+						if (err) {
+							console.log('unable to store coming-soon movie');
+						}
 
-					try {
-						movie_structure[params[0]] = params[1];
-					} catch (e) {
+						if (response == 'OK') {
+							console.log('coming-soon movie successfuly saved');
+						}
+					});
+					} catch(e) {
 						console.log(e);
+						return;
 					}
-				});
-
-				movies.push(movie_structure);
 			});
 
 			// store result to storage
 			console.log('store coming soon movies to redis');
-			var storage = at_storage().getClient();
-			storage.set('coming_soon', JSON.stringify(movies), function(){
+			self.getStorageClient().set('coming_soon', JSON.stringify(movies), function(){
 				console.log('redis response:', arguments);
 			});
 
@@ -305,8 +297,7 @@ Cinema21.prototype.coming_soon = function() {
 	}
 
 	// try to get 'coming soon' from redis
-	var storage = at_storage().getClient();
-	storage.get('coming_soon', function(err, result){
+	self.getStorageClient().get('coming_soon', function(err, result){
 		console.log('get "coming_soon" from redis. response:', arguments);
 		if (err || result === null) {
 			console.log('either error or "coming_soon" is not found. try fetch');
