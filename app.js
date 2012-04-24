@@ -31,10 +31,12 @@ app.configure('production', function(){
 // - implement a better routing
 //   consult this: http://expressjs.com/guide.html#passing-route%20control
 app.get('/cinema21/cities', function(req, res){
+	res.contentType('application/json');
 	cinema21(req, res).cities();
 });
 
 app.get('/cinema21/coming-soon', function(req, res){
+	res.contentType('application/json');
 	cinema21(req, res).coming_soon();
 });
 

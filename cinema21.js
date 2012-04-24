@@ -197,8 +197,7 @@ Cinema21.prototype.cities = function() {
 			fetchCities();
 		} else {
 			console.log('cities record found from redis.');
-			cities = JSON.parse(result);
-			self.res.send(cities);
+			self.res.send(result);
 		}
 	});
 };
@@ -268,8 +267,7 @@ Cinema21.prototype.coming_soon = function() {
 			fetchComingSoon();
 		} else {
 			console.log('"coming_soon" found on redis');
-			movies = JSON.parse(result);
-			self.res.send(movies);
+			self.res.send(result);
 		}
 	});
 };
