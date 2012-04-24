@@ -171,7 +171,7 @@ Cinema21.prototype.cities = function() {
 			if (cityName.length == 2) {
 				cityName = cityName[1];
 				//console.log('self.getCityId():', self.getCityId());
-				cities.push([self.getCityId(), cityName]);
+				cities.push({id: self.getCityId(), name: cityName});
 			}
 		
 			// add the rest of them
@@ -191,16 +191,33 @@ Cinema21.prototype.cities = function() {
 					if (href.length == 2) {
 						var cityId = parseInt(href[1]);
 						var cityName = $city.html();
-						cities.push([cityId, cityName]);
+						cities.push({id: cityId, name: cityName});
 					}
 				}
 			});
 
+			// create a record on storage (redis)
+			// for each city
+			for(var i in cities) {
+				var cityId = cities[i].id;
+				var key = ['city', cityId].join(':');
+				var value = cities[i];
+				console.log(key, value);
+
+				self.getStorageClient().hmset(key, value, function(err, response){
+					if (err) {
+						console.log('unable to store city entry');
+					}
+
+					if (response == 'OK') {
+						console.log('city entry successfully stored:');
+					}
+				});
+			}
+
 			// store result to storage (redis)
-			console.log('store cities to redis');
-			var redis = at_storage().getClient();
-			redis.set('cities', JSON.stringify(cities), function(){
-				console.log('redis response:', arguments);
+			self.getStorageClient().set('cities', JSON.stringify(cities), function(){
+				console.log('store cities to redis. response:', arguments);
 			});
 
 			self.res.send(cities);
@@ -209,8 +226,7 @@ Cinema21.prototype.cities = function() {
 
 	// try to get cities from storage (redis)
 	console.log('try to get cities from redis');
-	var storage = at_storage().getClient();
-	storage.get('cities', function(err, result){
+	self.getStorageClient().get('cities', function(err, result){
 		console.log('get "cities" from redis response:', arguments);
 		if (err || (result === null))  {
 			console.log('either error or no cities found from redis. try to fetch');
