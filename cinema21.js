@@ -276,45 +276,74 @@ Cinema21.prototype.city = function(id) {
 	var self = this;
 	self.setCityId(id);
 
-	self.request_param.uri += '/gui.list_theater?sid=&city_id=' + self.getCityId();
+	function fetchCity() {
+		self.request_param.uri += '/gui.list_theater?sid=&city_id=' + self.getCityId();
 
-	self.fetch(function(err, window){
-			var $ = window.jQuery;
+		self.fetch(function(err, window){
+				var $ = window.jQuery;
 
-			// get city name
-			var found = false;
+				// get city name
+				var found = false;
 
-			// "Playing at Ujung Pandang"
-			var cityName = $('#box_content div#box_title:last').html();
-			cityName = cityName.match(/Playing at ([a-zA-Z\ ]+)$/i);
-			if (cityName.length && (cityName.length == 2)) {
-				found = true;
-				cityName = cityName[1];
-			}
+				// "Playing at Ujung Pandang"
+				var cityName = $('#box_content div#box_title:last').html();
+				cityName = cityName.match(/Playing at ([a-zA-Z\ ]+)$/i);
+				if (cityName.length && (cityName.length == 2)) {
+					found = true;
+					cityName = cityName[1];
+				}
 
-			if (!found) {
-				caller.res.send(404);
-				return;
-			}
+				if (!found) {
+					self.res.send(404);
+					return;
+				}
 
-			// we are at correct result page
-			// lets fill response...
-			var response = {
-				city: {},
-				movies: [],
-				theaters: []
-			};
+				// we are at correct result page
+				// lets fill response...
+				var response = {
+					city: {},
+					movies: [],
+					theaters: []
+				};
 
-			var city = self.getCity();
-			city.setId(self.getCityId());
-			city.setName(cityName);
-			city.$ = $;
+				// City model
+				var city = self.getCity();
+				city.setId(self.getCityId());
+				city.setName(cityName);
+				city.$ = $;
 
-			response.city = city.getDetail();
-			response.movies = city.getNowPlaying();
-			response.theaters = city.getTheaters();
+				response.city = city.getDetail();
+				response.movies = city.getNowPlaying();
+				response.theaters = city.getTheaters();
 
+				self.res.send(response);
+
+				// store city detail to redis
+				console.log('store city detail to redis');
+				var key = ['city', self.getCityId(), 'detail'].join(':'); 
+				self.getStorageClient().set(key, JSON.stringify(response), function(err, result){
+					if (err) {
+						console.log('unable to save city detail.');
+					}
+
+					if (result == 'OK') {
+						console.log('city detail successfully saved');
+					}
+				});
+		});
+	}
+
+	// get complete city information from redis
+	var key = ['city', self.getCityId(), 'detail'].join(':'); 
+	self.getStorageClient().get(key, function(err, response){
+		if (err | response === null) {
+			console.log('city detail not found. try fetch new data');
+			fetchCity();
+		} else {
+			console.log('city detail found on redis', response);
+			self.res.contentType('application/json');
 			self.res.send(response);
+		}
 	});
 };
 
@@ -408,6 +437,19 @@ function City(caller) {
 				};
 
 				movies.push(movie);
+
+				// store movie to redis
+				console.log('store city now-playing movies');
+				var key = ['movie', movie.id].join(':');
+				caller.getStorageClient().hmset(key, movie, function(err, response){
+					if (err) {
+						console.log('unable to save city now-playing movie.');
+					}
+
+					if (response == 'OK') {
+						console.log('city now-playing movie successfully saved');
+					}
+				});
 			});
 		} catch (e) {}
 
@@ -446,11 +488,25 @@ function City(caller) {
 
 				var theater = {
 					id: id,
+					city_id: self.getId(),
 					name: name,
 					mtix: mtix
 				};
 
 				theaters.push(theater);
+
+				// store theater to redis
+				console.log('store theater to redis');
+				var key = ['theater', theater.id].join(':');
+				caller.getStorageClient().hmset(key, theater, function(err, response){
+					if (err) {
+						console.log('unable to save theater.');
+					}
+
+					if (response == 'OK') {
+						console.log('theater successfully saved');
+					}
+				});
 			});
 		} catch (e) {
 			console.log(e);
