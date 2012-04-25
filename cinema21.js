@@ -1,7 +1,7 @@
 var request = require('request'),
 		url = require('url'),
 		jsdom = require('jsdom'),
-		at_storage = require('at_storage');
+		at_storage = require('./at_storage');
 
 
 function Cinema21(req, res) {
@@ -114,6 +114,7 @@ function Cinema21(req, res) {
  * @author killedbymemory <leonardo@situmorang.net>
  */
 Cinema21.prototype.cities = function() {
+	debugger;
 	console.log('Cinema21::cities() called...');
 	var self = this;
 	var cities = [];
