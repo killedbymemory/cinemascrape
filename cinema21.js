@@ -1,8 +1,9 @@
 var request = require('request'),
 		url = require('url'),
 		jsdom = require('jsdom'),
-		at_storage = require('./at_storage');
-
+		at_storage = require('./at_storage'),
+		events = require('events'),
+		emitter = new events.EventEmitter;
 
 function Cinema21(req, res) {
 	// private variable, reference to Cinema21 object
@@ -351,30 +352,85 @@ Cinema21.prototype.city = function(id) {
 
 Cinema21.prototype.theater = function(id) {
 	var self = this;
+	var cacheKey = ['theater', id, 'detail'].join(':');
 
-	self.request_param.uri += '/gui.list_schedule?sid=&find_by=2&cinema_id=' + id;
+	function fetchTheater() {
+		self.request_param.uri += '/gui.list_schedule?sid=&find_by=2&cinema_id=' + id;
 
-	self.fetch(function(err, window){
-		var $ = window.jQuery;
+		self.fetch(function(err, window){
+			debugger;
+			var $ = window.jQuery;
 
-		var response = {
-			theater: {},
-			movies: []
-		};
+			var response = {
+				theater: {},
+				movies: []
+			};
 
-		var theater = self.getTheater();
-		theater.setId(id);
-		theater.$ = $;
+			var theater = self.getTheater();
+			theater.setId(id);
+			theater.$ = $;
 
-		try {
-			response.theater = theater.getDetail();
-			response.movies = theater.getNowPlaying();
-		} catch(e) {
-			console.log(e);
-			response = 404;
+			var theaterDetailDone = false;
+			var theaterNowPlayingDone = false;
+
+			emitter.on('theaterDetailDone', function(detail){
+				theaterDetailDone = true;
+				response.theater = detail;
+				emitter.emit('theaterDone', 'theaterDetailDone');
+			});
+
+			emitter.on('theaterNowPlayingDone', function(movies){
+				theaterNowPlayingDone = true;
+				response.movies = movies;
+				emitter.emit('theaterDone', 'theaterNowPlayingDone');
+			});
+
+			emitter.on('theaterDone', function(caller){
+				console.log('Called by: ', caller);
+				console.log('theaterDetailDone: ', theaterDetailDone);
+				console.log('theaterNowPlayingDone: ', theaterNowPlayingDone);
+				if (theaterDetailDone && theaterNowPlayingDone) {
+					console.log('theaterDetail and theaterNowPlaying is completed!');
+
+					console.log('store theater detail and now playing movies to redis');
+					self.getStorageClient().set(cacheKey, JSON.stringify(response), function(err, result){
+						if (err) {
+							console.log('unable to store theater detail to redis');
+						}
+
+						if (result == 'OK') {
+							console.log('theater detail successfully saved');
+						}
+					});
+
+					render(response);
+				} else {
+					console.log('Not completed yet. Still cannot render theater response');
+				}
+			});
+
+			try {
+				theater.getDetail();
+				theater.getNowPlaying();
+			} catch(e) {
+				console.log(e);
+				render(404);
+			}
+		});
+	}
+
+	function render(result){
+		self.res.send(result);
+	}
+
+	self.getStorageClient().get(cacheKey, function(err, result){
+		if (err | result === null) {
+			console.log('No theater detail found on redis. Try fetch content.');
+			fetchTheater();
+		} else {
+			console.log('Theater detail found on redis:', result);
+			render(result);
 		}
-
-		self.res.send(response);
 	});
 };
 
@@ -551,6 +607,7 @@ function Theater(caller) {
 
 	this.getDetail = function() {
 		var $ = this.$;
+		var key = ['theater', this.getAttribute('id')].join(':');
 
 		var $theaterInfo = $('#box_content table td');
 
@@ -577,13 +634,24 @@ function Theater(caller) {
 			var addressAndPhone = $($theaterInfo[1]).text().split("\r\n");
 			if (addressAndPhone && (addressAndPhone.length >= 2)) {
 				this.setAttribute('address', addressAndPhone[0]);
-				this.setAttribute('phone', addressAndPhone[1].replace(/.*TELEPON : /, ''));
+				this.setAttribute('phone', addressAndPhone[1].replace(/.* : /, ''));
 			} else {
 				console.log('No theater address nor phone');
 			}
 		}
 
-		return attributes;
+		// store/update theater info
+		caller.getStorageClient().hmset(key, attributes, function(err, result){
+			if (err) {
+				console.log('unable to store theater info to redis');
+			}
+
+			if (result == 'OK') {
+				console.log('theater info successfully saved');
+			}
+		});
+
+		emitter.emit('theaterDetailDone', attributes);
 	};
 
 	this.getNowPlaying = function() {
@@ -677,7 +745,41 @@ function Theater(caller) {
 			});
 		});
 
-		return movies;
+		for(var i in movies) {
+			var movie = movies[i];
+
+			// store theater's movie schedule
+			// theater:JKTGAND:movie:122JST:schedule
+			var key = [
+				'theater', 
+				this.getAttribute('id'), 
+				'movie', 
+				movie.id, 
+				'schedule'
+			].join(':');
+
+			caller.getStorageClient.set(key, JSON.stringify(movie.schedule), function(err, result){
+				if (err) {
+					console.log("unable to store theater's movie schedule");
+				}
+
+				if (result == 'OK') {
+					console.log("theater's movie schedule successfullly saved");
+				}
+			});
+		}
+
+		caller.getStorageClient.hmset(cacheKey, attributes, function(err, result){
+			if (err) {
+				console.log('unable to store theater info to redis');
+			}
+
+			if (result == 'OK') {
+				console.log('theater info successfully saved');
+			}
+		});
+
+		emitter.emit('theaterNowPlayingDone', movies);
 	};
 }
 

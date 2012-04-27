@@ -4,7 +4,7 @@
  */
 var express = require('express'),
 		routes = require('./routes'),
-		cinema21 = require('./cinema21');
+		cinema21 = require('./cinema21.js');
 
 var app = module.exports = express.createServer();
 
@@ -51,7 +51,7 @@ app.get('/cinema21/coming-soon', function(req, res){
 app.get(/^\/cinema21\/(city|theater)\/(\d{1,4}|[A-Z]{7})(?:\/)?$/, function(req, res){
 	var cinema21Obj = cinema21(req, res);
 
-	try {
+	//try {
 		var action = req.params[0];
 		var id = req.params[1];
 
@@ -69,9 +69,9 @@ app.get(/^\/cinema21\/(city|theater)\/(\d{1,4}|[A-Z]{7})(?:\/)?$/, function(req,
 		// first argument supplied into call,
 		// will be act as 'this' within the method (context)
 		cinema21Obj[action].call(cinema21Obj, id);
-	} catch (e) {
-		console.log(e);
-	}
+	//} catch (e) {
+	//	console.log(e);
+	//}
 });
 
 //*
