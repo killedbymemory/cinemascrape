@@ -374,18 +374,23 @@ Cinema21.prototype.theater = function(id) {
 			var theaterNowPlayingDone = false;
 
 			emitter.on('theaterDetailDone', function(detail){
+				console.log('theater detail done. put detail into response');
+				debugger;
 				theaterDetailDone = true;
 				response.theater = detail;
 				emitter.emit('theaterDone', 'theaterDetailDone');
 			});
 
 			emitter.on('theaterNowPlayingDone', function(movies){
+				console.log('theater now playing done. put movies into response');
+				debugger;
 				theaterNowPlayingDone = true;
 				response.movies = movies;
 				emitter.emit('theaterDone', 'theaterNowPlayingDone');
 			});
 
 			emitter.on('theaterDone', function(caller){
+				debugger;
 				console.log('Called by: ', caller);
 				console.log('theaterDetailDone: ', theaterDetailDone);
 				console.log('theaterNowPlayingDone: ', theaterNowPlayingDone);
@@ -420,6 +425,13 @@ Cinema21.prototype.theater = function(id) {
 	}
 
 	function render(result){
+		// result might be a string or json formatted object
+		if (typeof result === "string") {
+			self.res.contentType('application/json');
+		}
+
+		self.getStorageClient().end();
+
 		self.res.send(result);
 	}
 
@@ -758,7 +770,7 @@ function Theater(caller) {
 				'schedule'
 			].join(':');
 
-			caller.getStorageClient.set(key, JSON.stringify(movie.schedule), function(err, result){
+			caller.getStorageClient().set(key, JSON.stringify(movie.schedule), function(err, result){
 				if (err) {
 					console.log("unable to store theater's movie schedule");
 				}
@@ -768,16 +780,6 @@ function Theater(caller) {
 				}
 			});
 		}
-
-		caller.getStorageClient.hmset(cacheKey, attributes, function(err, result){
-			if (err) {
-				console.log('unable to store theater info to redis');
-			}
-
-			if (result == 'OK') {
-				console.log('theater info successfully saved');
-			}
-		});
 
 		emitter.emit('theaterNowPlayingDone', movies);
 	};
