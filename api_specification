@@ -11,7 +11,7 @@ GET cinema21/theater/1 *
 get theater detail (address, latitude longitude, phone number, ticket price)
 it's also return 'now playing' movies as well
 
-GET cinema21/movie/1
+GET cinema21/movie/1 *
 return movie detail, such as:
 - id
 - title
