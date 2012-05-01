@@ -458,6 +458,49 @@ Cinema21.prototype.theater = function(id) {
 };
 
 
+Cinema21.prototype.movie = function(id) {
+	var self = this;
+	var key = ['movie', id, 'detail'].join(':');
+
+	function fetchMovie() {
+		self.request_param.uri += '/gui.movie_details?sid=&movie_id=' + id;
+
+		self.fetch(function(err, window){
+			var $ = window.jQuery;
+
+			var movie = self.getMovie();
+			movie.setId(id);
+			movie.$ = $;
+
+			emitter.on('movieDetailDone', function(detail){
+				self.getStorageClient().set(key, JSON.stringify(detail), function(err, result){
+					console.log('movie detail (string) save to redis. response: ', arguments);
+
+					console.log('movie detail is done. put it into response');
+					self.render(detail);
+				});
+			});
+
+			try {
+				movie.getDetail();
+			} catch(e) {
+				console.log(e);
+				self.render(404);
+			}
+		});
+	}
+	
+	self.getStorageClient().get(key, function(err, result){
+		if (err | result === null) {
+			console.log('No movie detail found on redis. Try fetch content');
+			fetchMovie();
+		} else {
+			console.log('Movie detail found on redis:', result);
+			self.render(result);
+		}
+	});
+};
+
 /**
  * City model
  *
@@ -793,6 +836,94 @@ function Theater(caller) {
 		}
 
 		emitter.emit('theaterNowPlayingDone', movies);
+	};
+}
+
+function Movie(caller) {
+	console.log('create new Movie instance');
+
+	var self = this;
+
+	var attributes = {
+		id: null,
+		title: null,
+		synopsis: null,
+		producer: null,
+		distributor: null,
+		genre: null,
+		duration: null,
+		writer: null,
+		director: null,
+		player: null,
+		site: null,
+		image: null,
+		local: false
+	};
+
+	this.setAttribute = function(name, value) {
+		attributes[name] = value;
+	};
+
+	this.getAttribute = function(name) {
+		try {
+			return attributes[name];
+		} catch(e) {
+			console.log('No such attribute exist: ' + name, e);
+			return undefined;
+		}
+	};
+
+	this.$;
+
+	this.setId = function(id) {
+		this.setAttribute('id', id);
+	};
+
+	this.getId = function() {
+		return this.getAttribute('id');
+	};
+
+	this.getDetail = function() {
+		var $ = this.$;
+		var key = ['movie', this.getId()].join(':');
+
+		var $movieDetail = $('#box_content');
+		this.setAttribute('title', $('#box_title', $movieDetail).text());
+		this.setAttribute('image', 'http://m.21cineplex.com/' + $('img', $movieDetail).attr('src'));
+		this.setAttribute('synopsis', $('div.txt_img', $movieDetail).html().replace(/\r\n|\n|\<br\>|\<br \/\>/g, ''));
+
+		$('p.p_movie', $movieDetail).each(function(index, element){
+			var attribute = $(this).text().match(/^([A-Za-z]+)\:(.*)$/);
+			console.log('movie attribute found: ', attribute);
+			var key = attribute[1].trim().toLowerCase();
+			var value = attribute[2].trim();
+			self.setAttribute(key, value);
+		});
+
+		// local movie id starts with 02
+		this.setAttribute('local', (this.getId().substr(0,2) === '02'));
+
+		// only update/insert non-null attribute
+		var affectedAttributes = {};
+		for(var name in attributes) {
+			if (attributes[name] !== null) {
+				affectedAttributes[name] = attributes[name];
+			}
+		}
+
+		caller.getStorageClient().hmset(key, affectedAttributes, function(err, result){
+			if (err) {
+				console.log('Unable to store movie detail to redis');
+			}
+
+			if (result == 'OK') {
+				console.log('Movie detail successfully saved to redis');
+			}
+		});
+
+		// could also be a callback, 
+		// instead of triggering event
+		emitter.emit('movieDetailDone', attributes);
 	};
 }
 

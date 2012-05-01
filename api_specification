@@ -13,6 +13,7 @@ it's also return 'now playing' movies as well
 
 GET cinema21/movie/1
 return movie detail, such as:
+- id
 - title
 - producer
 - production house
