@@ -239,8 +239,7 @@ Cinema21.prototype.coming_soon = function() {
 				try {
 					var movie = {
 						id: $movie.attr('href').match(/movie_id=([0-9a-zA-Z]+)/)[1],
-						title: $movie.html(),
-						coming_soon: true
+						title: $movie.html()
 					};
 
 					movies.push(movie);
