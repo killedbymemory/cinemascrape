@@ -419,7 +419,7 @@ Cinema21.prototype.theater = function(id) {
 						}
 					});
 
-					render(response);
+					self.render(response);
 				} else {
 					console.log('Not completed yet. Still cannot render theater response');
 				}
@@ -430,20 +430,9 @@ Cinema21.prototype.theater = function(id) {
 				theater.getNowPlaying();
 			} catch(e) {
 				console.log(e);
-				render(404);
+				self.render(404);
 			}
 		});
-	}
-
-	function render(result){
-		// result might be a string or json formatted object
-		if (typeof result === "string") {
-			self.res.contentType('application/json');
-		}
-
-		self.getStorageClient().end();
-
-		self.res.send(result);
 	}
 
 	self.getStorageClient().get(cacheKey, function(err, result){
@@ -452,7 +441,7 @@ Cinema21.prototype.theater = function(id) {
 			fetchTheater();
 		} else {
 			console.log('Theater detail found on redis:', result);
-			render(result);
+			self.render(result);
 		}
 	});
 };
