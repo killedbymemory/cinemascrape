@@ -105,6 +105,18 @@ function Cinema21(req, res) {
 			}, jsdomCallback);
 		});
 	};
+
+	this.render = function(result) {
+		// close redis connection
+		(storageClient && storageClient.end());
+
+		// result from redis is string
+		if (typeof result == "string") {
+			this.res.contentType('application/json');
+		}
+
+		this.res.send(result);
+	}
 }
 
 /**
