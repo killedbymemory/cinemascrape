@@ -417,9 +417,9 @@ Cinema21.prototype.theater = function(id) {
 						if (result == 'OK') {
 							console.log('theater detail successfully saved');
 						}
-					});
 
-					self.render(response);
+						self.render(response);
+					});
 				} else {
 					console.log('Not completed yet. Still cannot render theater response');
 				}
