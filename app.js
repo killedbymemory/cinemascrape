@@ -52,7 +52,7 @@ app.get('/cinema21/coming-soon', function(req, res){
 // http://localhost:3000/cinema21/movie/122JST
 // http://localhost:3000/cinema21/movie/122JST/
 // return movie detail
-app.get(/^\/cinema21\/(city|theater|movie)\/(\d{1,4}|[A-Z]{7}|\d{2}[A-Z0-9]{4})(?:\/)?$/, function(req, res){
+app.get(/^\/cinema21\/(city|theater|movie)\/(\d{1,4}|[A-Z]{6,7}|\d{2}[A-Z0-9]{4})(?:\/)?$/, function(req, res){
 	var cinema21Obj = cinema21(req, res);
 
 	//try {
