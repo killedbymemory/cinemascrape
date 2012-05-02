@@ -519,6 +519,142 @@ Cinema21.prototype.movie = function(id) {
 	});
 };
 
+
+/**
+ * Get theaters who play the movie within a city
+ * http://m.21cineplex.com/gui.list_schedule?sid=&movie_id=12AVE3&order=1&find_by=1
+ */
+Cinema21.prototype.movieByCity = function(movie_id, city_id) {
+	var self = this;
+	var key = ['movie', movie_id, 'city', city_id, 'detail'].join(':');
+
+	function fetchMovieByCity() {
+		self.setCityId(city_id);
+		self.request_param.uri += 'gui.list_schedule?sid=&order=1&find_by=1&movie_id=' + movie_id;
+
+		self.fetch(function(err, window){
+			var response = {};
+
+			// get theaters and theirs schedule
+			var $ = window.jQuery;
+			var theaters = [];
+			var theatherId = 0;
+			$('#box_content *').each(function(index, element){
+				if (theaters[theaterId] === undefined) {
+					var theaterData = {
+						id: null,
+						name: null
+					};
+
+					// add theater
+					theaters.push(theaterData);
+				}
+
+				// delimiter
+				if ($(this).hasClass('separate_menu')) {
+					// initialise / increment scheduleId
+					theaterId++;
+					return;
+				}
+
+				var theater = theaters[theaterId];
+				var $this = $(this);
+				var elementId = $this.attr('id');
+				var elementClass = $this.attr('class');
+
+				if (elementId && elementId == 'menu_ol_schedule') {
+					// extract theater name and its id
+				}
+				
+				// extract schedule(s)
+				$('div.schedule_timeshow').each(function(index, element){
+					debugger;
+					var $this = $(this);
+
+					// reference to movie object
+					var movie = movies[index];
+					var scheduleId = 0;
+
+					$('*', $this).each(function(index, element){
+						debugger;
+						if (movie.schedule[scheduleId] === undefined) {
+							var scheduleData = {
+								date: null,
+								time: [],
+								price: 0,
+								mtix: false
+							};
+
+							// create new schedule
+							movie.schedule.push(scheduleData);
+							console.log('Create new schedule.', movie.schedule);
+						}
+
+						// delimiter
+						if ($(this).hasClass('p_list')) {
+							// initialise / increment scheduleId
+							scheduleId++;
+							return;
+						}
+
+						var schedule = movie.schedule[scheduleId];
+
+						if ($(this).hasClass('p_date')) {
+							// Date: Kamis,19-04-2012 (MTIX)
+							schedule.date = $(this).text().match(/[0-9]{2}-[0-9]{2}-201[2-9]/)[0];
+
+							var mtix = $(this).text().match(/\(MTIX\)$/);
+							(mtix && (schedule.mtix = (mtix.length === 1)));
+							return;
+						}
+
+						if ($(this).hasClass('p_time')) {
+							// [12:30] [14:40] [16:50] [19:00] [21:10]
+							var occurrence = $(this).text().trim().split(' ');
+							if (occurrence && (occurrence.length > 0)) {
+								for(var i in occurrence) {
+									var time = occurrence[i].replace(/[\[\]]/g,'');
+									schedule.time.push(time);
+								}
+							} else {
+								console.log('No movie time(s)');
+							}
+							return;
+						}
+
+						if ($(this).hasClass('p_price')) {
+							// HTM: Rp.25,000
+							var price = $(this).html().match(/[1-9][0-9]\,[0-9]{3}$/);
+							if (price && price.length === 1) {
+								schedule.price = parseInt(price[0].replace(',', ''));
+							} else {
+								console.log('No movie ticket price');
+							}
+							return;
+						}
+					});
+				});
+			});
+
+
+
+
+
+
+		});
+	}
+	
+	self.getStorageClient().get(key, function(err, result){
+		if (err | result === null) {
+			console.log('No movie detail and list of theater per city found on redis. Try fetch content');
+			fetchMovieByCity();
+		} else {
+			console.log('Movie detail and list of theater per city found on redis:', result);
+			self.render(result);
+		}
+	});
+};
+
 /**
  * City model
  *

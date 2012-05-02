@@ -78,6 +78,11 @@ app.get(/^\/cinema21\/(city|theater|movie)\/(\d{1,4}|[A-Z]{6,7}|\d{2}[A-Z0-9]{4}
 		console.log(e.stack);
 	}
 });
+
+// http://localhost:3000/cinema21/movie/12BTAP/city/1000
+// return movie detail along with theaters who played it in certain city
+app.get(/^\/cinema21\/movie\/(\d{2}[A-Z0-9]{4})\/city\/(\d{1,4})(?:\/)?$/, function(req, res){
+	console.log(req.params);
 });
 
 //*
