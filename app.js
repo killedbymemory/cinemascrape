@@ -55,7 +55,7 @@ app.get('/cinema21/coming-soon', function(req, res){
 app.get(/^\/cinema21\/(city|theater|movie)\/(\d{1,4}|[A-Z]{6,7}|\d{2}[A-Z0-9]{4})(?:\/)?$/, function(req, res){
 	var cinema21Obj = cinema21(req, res);
 
-	//try {
+	try {
 		var action = req.params[0];
 		var id = req.params[1];
 
@@ -73,9 +73,11 @@ app.get(/^\/cinema21\/(city|theater|movie)\/(\d{1,4}|[A-Z]{6,7}|\d{2}[A-Z0-9]{4}
 		// first argument supplied into call,
 		// will be act as 'this' within the method (context)
 		cinema21Obj[action].call(cinema21Obj, id);
-	//} catch (e) {
-	//	console.log(e);
-	//}
+	} catch (e) {
+		console.log(new Date());
+		console.log(e.stack);
+	}
+});
 });
 
 //*
