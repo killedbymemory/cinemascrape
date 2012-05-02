@@ -467,19 +467,42 @@ Cinema21.prototype.movie = function(id) {
 			movie.setId(id);
 			movie.$ = $;
 
-			emitter.on('movieDetailDone', function(detail){
+			/**
+			 * This method will be called once movie detail 
+			 * extracted from DOM and stored into redis.
+			 *
+			 * When second argument is not supplied, the detail
+			 * is directly sent to client via express's response object.
+			 *
+			 * Otherwhise, second argument (callback function) will be 
+			 * called for further operation.
+			 */
+			emitter.on('movieDetailDone', function(detail, cb){
 				self.getStorageClient().set(key, JSON.stringify(detail), function(err, result){
 					console.log('movie detail (string) save to redis. response: ', arguments);
 
-					console.log('movie detail is done. put it into response');
-					self.render(detail);
+					if (typeof cb == "function") {
+						console.log('movie detail is done. callback is available, passed to it');
+						cb(detail);
+					} else {
+						console.log('movie detail is done. put it into response');
+						self.render(detail);
+					}
 				});
 			});
 
 			try {
 				movie.getDetail();
 			} catch(e) {
-				console.log(e);
+				debugger;
+				
+				// take me some time to figure out e.stack -_-"
+				// found it on:
+				// - http://www.senchalabs.org/connect/errorHandler.html
+				// - https://github.com/senchalabs/connect/blob/master/lib/middleware/errorHandler.js
+				//
+				// we can also use connect errorHandler though
+				console.log(e.stack);
 				self.render(404);
 			}
 		});
