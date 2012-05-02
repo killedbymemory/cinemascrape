@@ -15,7 +15,8 @@ function Cinema21(req, res) {
 		uri:'http://m.21cineplex.com',
 		headers:{
 			'referer':'http://m.21cineplex.com',
-			'cookie':'city_id=10'
+			'cookie':['city_id=%city_id%', 'BATMAN_MOBILEWEB=MOBILEWEB_MATRIX'].join(';'),
+			'user-agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20100101 Firefox/12.0'
 		}
 	};
 
@@ -87,9 +88,14 @@ function Cinema21(req, res) {
 
 	this.fetch = function(jsdomCallback) {
 		console.log('Cinema21::fetch() called...');
+
+		// supply city id to cookie
+		var cookie = this.request_param.headers.cookie;
+		this.request_param.headers.cookie = cookie.replace('%city_id%', this.getCityId());
 		console.log('Request param: ', this.request_param);
 
 		request(this.request_param, function(err, response, body){
+			debugger;
 			//console.log('Response header:', response);
 			//console.log(body);
 
