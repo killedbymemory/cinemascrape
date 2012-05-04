@@ -461,11 +461,33 @@ Cinema21.prototype.theater = function(id) {
  * detail gathered.
  *
  * It will come handy when another controller
- * need to use movie detail
+ * need to use movie detail.
+ *
+ * When callback is provided, movie detail
+ * is always in object literal format instead
+ * of json string -- especially when movie
+ * detail is already exist in redis (stored
+ * in string, thus need to re-parse)
  */
 Cinema21.prototype.movie = function(id, cb) {
 	var self = this;
 	var key = ['movie', id, 'detail'].join(':');
+
+	function render(detail) {
+		if (typeof cb == "function") {
+			console.log('movie detail is done. callback is available, passed to it');
+			console.log('callback should always expecting object instead of json formatted string');
+			
+			if (typeof detail == "string") {
+				detail = JSON.parse(detail);
+			}
+
+			cb(detail);
+		} else {
+			console.log('movie detail is done. put it into response');
+			self.render(detail);
+		}
+	}
 
 	function fetchMovie() {
 		self.request_param.uri = self.base_uri + '/gui.movie_details?sid=&movie_id=' + id;
@@ -487,14 +509,7 @@ Cinema21.prototype.movie = function(id, cb) {
 			emitter.on('movieDetailDone', function(detail){
 				self.getStorageClient().set(key, JSON.stringify(detail), function(err, result){
 					console.log('movie detail (string) save to redis. response: ', arguments);
-
-					if (typeof cb == "function") {
-						console.log('movie detail is done. callback is available, passed to it');
-						cb(detail);
-					} else {
-						console.log('movie detail is done. put it into response');
-						self.render(detail);
-					}
+					render(detail);
 				});
 			});
 
@@ -521,7 +536,7 @@ Cinema21.prototype.movie = function(id, cb) {
 			fetchMovie();
 		} else {
 			console.log('Movie detail found on redis:', result);
-			self.render(result);
+			render(result);
 		}
 	});
 };
