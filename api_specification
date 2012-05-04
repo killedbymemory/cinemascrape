@@ -24,7 +24,7 @@ return movie detail, such as:
 - player
 - official website
 
-GET cinema21/movie/1/city/10
+GET cinema21/movie/1/city/10 *
 return movie detail along with theater(s) who play the movie filtered by city_id
 
 GET cinema21/movie/1/thumbs-up
