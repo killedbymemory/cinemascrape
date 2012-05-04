@@ -455,13 +455,20 @@ Cinema21.prototype.theater = function(id) {
 	});
 };
 
-
-Cinema21.prototype.movie = function(id) {
+/**
+ * Second argument is callback function
+ * which will be triggered once the movie 
+ * detail gathered.
+ *
+ * It will come handy when another controller
+ * need to use movie detail
+ */
+Cinema21.prototype.movie = function(id, cb) {
 	var self = this;
 	var key = ['movie', id, 'detail'].join(':');
 
 	function fetchMovie() {
-		self.request_param.uri += '/gui.movie_details?sid=&movie_id=' + id;
+		self.request_param.uri = self.base_uri + '/gui.movie_details?sid=&movie_id=' + id;
 
 		self.fetch(function(err, window){
 			var $ = window.jQuery;
@@ -474,13 +481,10 @@ Cinema21.prototype.movie = function(id) {
 			 * This method will be called once movie detail 
 			 * extracted from DOM and stored into redis.
 			 *
-			 * When second argument is not supplied, the detail
+			 * When callback is not supplied, the detail
 			 * is directly sent to client via express's response object.
-			 *
-			 * Otherwhise, second argument (callback function) will be 
-			 * called for further operation.
 			 */
-			emitter.on('movieDetailDone', function(detail, cb){
+			emitter.on('movieDetailDone', function(detail){
 				self.getStorageClient().set(key, JSON.stringify(detail), function(err, result){
 					console.log('movie detail (string) save to redis. response: ', arguments);
 
