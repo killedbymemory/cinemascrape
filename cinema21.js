@@ -11,8 +11,11 @@ function Cinema21(req, res) {
 
 	this.req = req;
 	this.res = res;
+
+	this.base_uri = 'http://m.21cineplex.com';
+
 	this.request_param = {
-		uri:'http://m.21cineplex.com',
+		uri: this.base_uri,
 		headers:{
 			'referer':'http://m.21cineplex.com',
 			'cookie':['city_id=%city_id%', 'BATMAN_MOBILEWEB=MOBILEWEB_MATRIX'].join(';'),
