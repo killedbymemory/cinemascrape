@@ -536,55 +536,76 @@ Cinema21.prototype.movieByCity = function(movie_id, city_id) {
 	var key = ['movie', movie_id, 'city', city_id, 'detail'].join(':');
 
 	function fetchMovieByCity() {
+
 		self.setCityId(city_id);
-		self.request_param.uri += 'gui.list_schedule?sid=&order=1&find_by=1&movie_id=' + movie_id;
+		self.request_param.uri += '/gui.list_schedule?sid=&order=1&find_by=1&movie_id=' + movie_id;
 
 		self.fetch(function(err, window){
-			var response = {};
+			debugger;
+			var response = {
+				movie: null,
+				theaters: []
+			};
 
 			// get theaters and theirs schedule
 			var $ = window.jQuery;
-			var theaters = [];
-			var theatherId = 0;
+			var theaters = response.theaters;
+			var theaterId = 0;
+
 			$('#box_content *').each(function(index, element){
+				debugger;
+				// create new theater element
+				// when the loop started or a delimiter is found
 				if (theaters[theaterId] === undefined) {
 					var theaterData = {
 						id: null,
-						name: null
+						name: null,
+						schedule: []
 					};
 
 					// add theater
 					theaters.push(theaterData);
 				}
 
-				// delimiter
+				// theater delimiter
 				if ($(this).hasClass('separate_menu')) {
 					// initialise / increment scheduleId
 					theaterId++;
 					return;
 				}
 
+				// this is the most important object
+				// reference to current theater
 				var theater = theaters[theaterId];
+
+				// reference to current DOM object
 				var $this = $(this);
+
 				var elementId = $this.attr('id');
 				var elementClass = $this.attr('class');
 
-				if (elementId && elementId == 'menu_ol_schedule') {
-					// extract theater name and its id
+				if (elementId === null || elementClass === null) {
+					return;
 				}
-				
-				// extract schedule(s)
-				$('div.schedule_timeshow').each(function(index, element){
-					debugger;
-					var $this = $(this);
 
-					// reference to movie object
-					var movie = movies[index];
+				// extract theater name and its id
+				if (elementId == 'menu_ol_schedule') {
+					theater.id = $('li a', $this).attr('href').match(/cinema_id\=([0-9a-zA-Z]+)/)[1];
+					theater.name = $('li a', $this).text();
+					return;
+				}
+
+				// extract theater's movie schedule(s)
+				// each schedule represent a day
+				if (elementClass == 'schedule_timeshow') {
+					// reference to current theater's schedule
+					var schedules = theater.schedule;
+
 					var scheduleId = 0;
 
 					$('*', $this).each(function(index, element){
 						debugger;
-						if (movie.schedule[scheduleId] === undefined) {
+						if (schedules[scheduleId] === undefined) {
 							var scheduleData = {
 								date: null,
 								time: [],
@@ -593,18 +614,19 @@ Cinema21.prototype.movieByCity = function(movie_id, city_id) {
 							};
 
 							// create new schedule
-							movie.schedule.push(scheduleData);
-							console.log('Create new schedule.', movie.schedule);
+							schedules.push(scheduleData);
 						}
 
 						// delimiter
 						if ($(this).hasClass('p_list')) {
 							// initialise / increment scheduleId
+							// this will trigger new schedule to be created
 							scheduleId++;
 							return;
 						}
 
-						var schedule = movie.schedule[scheduleId];
+						// reference for current schedule
+						var schedule = schedules[scheduleId];
 
 						if ($(this).hasClass('p_date')) {
 							// Date: Kamis,19-04-2012 (MTIX)
@@ -640,14 +662,16 @@ Cinema21.prototype.movieByCity = function(movie_id, city_id) {
 							return;
 						}
 					});
-				});
+
+					return;
+				}
 			});
 
-
-
-
-
-
+			// get movie detail
+			self.movie(movie_id, function(movie){
+				response.movie = movie;
+				self.render(response);
+			});
 		});
 	}
 	
