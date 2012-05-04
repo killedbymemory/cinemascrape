@@ -102,7 +102,7 @@ function Cinema21(req, res) {
 			//console.log('Response header:', response);
 			//console.log(body);
 
-			if (err && respose.statusCode == 200) {
+			if (err && response.statusCode == 200) {
 				console.log('Request error.');
 			}
 
