@@ -32,6 +32,9 @@ function Cinema21(req, res) {
 	// storage client (default driver: redis)
 	var storageClient;
 
+	// *detail* should be re-evaluate every 6 hours
+	var secondBeforeExpire = 10;
+
 	// private variable
 	var city_id = 10; // Jakarta, by default
 
@@ -89,10 +92,15 @@ function Cinema21(req, res) {
 		return storageClient;
 	};
 
+	this.getExpire = function() {
+		return secondBeforeExpire;
+	};
+
 	this.fetch = function(jsdomCallback) {
 		console.log('Cinema21::fetch() called...');
 
 		// supply city id to cookie
+		debugger;
 		var cookie = this.request_param.headers.cookie;
 		this.request_param.headers.cookie = cookie.replace('%city_id%', this.getCityId());
 		console.log('Request param: ', this.request_param);
@@ -273,11 +281,28 @@ Cinema21.prototype.coming_soon = function() {
 
 			// store result to storage
 			console.log('store coming soon movies to redis');
-			self.getStorageClient().set('coming_soon', JSON.stringify(movies), function(){
-				console.log('redis response:', arguments);
-			});
+			self.getStorageClient().set('coming_soon', JSON.stringify(movies), function(err, result){
+				if (err) {
+					console.log('fail to store coming-soon movies to redis');
+				}
 
-			self.res.send(movies);
+				if (result == 'OK') {
+					console.log('successfully store coming-soon movies to redis. response:', arguments);
+
+					// set an expire to this 'cache'-like item
+					// ps: should be using 'multi' (redis's transaction) instead...
+					self.getStorageClient().expire('coming_soon', self.getExpire(), function(err, result){
+						if (err) {
+							console.log('unable to set expire to coming-soon movies');
+						}
+
+						if (result) {
+							console.log('expire is set to coming-soon movies');
+							self.res.send(movies);
+						}
+					});
+				}
+			});
 		});
 	}
 
