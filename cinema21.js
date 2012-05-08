@@ -273,10 +273,10 @@ Cinema21.prototype.coming_soon = function() {
 							console.log('coming-soon movie successfuly saved');
 						}
 					});
-					} catch(e) {
-						console.log(e);
-						return;
-					}
+				} catch(e) {
+					console.log(e);
+					return;
+				}
 			});
 
 			// store result to storage
