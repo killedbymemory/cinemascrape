@@ -133,7 +133,17 @@ function Cinema21(req, res) {
 		}
 
 		this.res.send(result);
-	}
+	};
+
+	// set default expire to key
+	// and later call cb (callback function)
+	// ps: should be using 'multi' (redis's transaction) instead...
+	this.expire = function(key, cb) {
+		this.getStorageClient().expire(key, this.getExpire(), function(){
+			console.log('set expire to:' + key + '. redis response:', arguments);
+			cb();
+		});
+	};
 }
 
 /**
@@ -290,16 +300,8 @@ Cinema21.prototype.coming_soon = function() {
 					console.log('successfully store coming-soon movies to redis. response:', arguments);
 
 					// set an expire to this 'cache'-like item
-					// ps: should be using 'multi' (redis's transaction) instead...
-					self.getStorageClient().expire('coming_soon', self.getExpire(), function(err, result){
-						if (err) {
-							console.log('unable to set expire to coming-soon movies');
-						}
-
-						if (result) {
-							console.log('expire is set to coming-soon movies');
-							self.res.send(movies);
-						}
+					self.expire('coming_soon', function(){
+						self.render(movies);
 					});
 				}
 			});
@@ -322,6 +324,9 @@ Cinema21.prototype.coming_soon = function() {
 Cinema21.prototype.city = function(id) {
 	var self = this;
 	self.setCityId(id);
+
+	// city result 'cache' key
+	var key = ['city', self.getCityId(), 'detail'].join(':');
 
 	function fetchCity() {
 		self.request_param.uri += '/gui.list_theater?sid=&city_id=' + self.getCityId();
@@ -363,11 +368,8 @@ Cinema21.prototype.city = function(id) {
 				response.movies = city.getNowPlaying();
 				response.theaters = city.getTheaters();
 
-				self.res.send(response);
-
 				// store city detail to redis
-				console.log('store city detail to redis');
-				var key = ['city', self.getCityId(), 'detail'].join(':'); 
+				console.log('store city result to redis');
 				self.getStorageClient().set(key, JSON.stringify(response), function(err, result){
 					if (err) {
 						console.log('unable to save city detail.');
@@ -375,21 +377,24 @@ Cinema21.prototype.city = function(id) {
 
 					if (result == 'OK') {
 						console.log('city detail successfully saved');
+
+						// set expire to city detail
+						self.expire(key, function(){
+							self.render(response);
+						});
 					}
 				});
 		});
 	}
 
 	// get complete city information from redis
-	var key = ['city', self.getCityId(), 'detail'].join(':'); 
-	self.getStorageClient().get(key, function(err, response){
-		if (err | response === null) {
+	self.getStorageClient().get(key, function(err, result){
+		if (err | result === null) {
 			console.log('city detail not found. try fetch new data');
 			fetchCity();
 		} else {
 			console.log('city detail found on redis', response);
-			self.res.contentType('application/json');
-			self.res.send(response);
+			self.render(response);
 		}
 	});
 };
