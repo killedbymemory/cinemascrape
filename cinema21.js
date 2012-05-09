@@ -721,7 +721,22 @@ Cinema21.prototype.movieByCity = function(movie_id, city_id) {
 			// get movie detail
 			self.movie(movie_id, function(movie){
 				response.movie = movie;
-				self.render(response);
+
+				// store result to redis, set expire, and render
+				console.log('try to store move detail + playing at to redis');
+				self.getStorageClient().set(key, JSON.stringify(response), function(err, result) {
+					if (err) {
+						console.log('unable to store movie detail and playing_at within city to redis');
+					}
+
+					if (result == 'OK') {
+						console.log('movie detail and playing_at within city successfully stored into redis');
+
+						self.expire(key, function(){
+							self.render(response);
+						});
+					}
+				});
 			});
 		});
 	}
