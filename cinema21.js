@@ -393,8 +393,8 @@ Cinema21.prototype.city = function(id) {
 			console.log('city detail not found. try fetch new data');
 			fetchCity();
 		} else {
-			console.log('city detail found on redis', response);
-			self.render(response);
+			console.log('city detail found on redis', result);
+			self.render(result);
 		}
 	});
 };
