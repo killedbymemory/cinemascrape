@@ -505,6 +505,7 @@ Cinema21.prototype.movie = function(id, cb) {
 	var self = this;
 	var key = ['movie', id, 'detail'].join(':');
 
+	// this is a proxy to Cinema21.render()
 	function render(detail) {
 		if (typeof cb == "function") {
 			console.log('movie detail is done. callback is available, passed to it');
@@ -541,7 +542,10 @@ Cinema21.prototype.movie = function(id, cb) {
 			emitter.on('movieDetailDone', function(detail){
 				self.getStorageClient().set(key, JSON.stringify(detail), function(err, result){
 					console.log('movie detail (string) save to redis. response: ', arguments);
-					render(detail);
+
+					self.expire(key, function(){
+						render(detail);
+					});
 				});
 			});
 
