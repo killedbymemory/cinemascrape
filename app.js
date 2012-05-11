@@ -88,6 +88,19 @@ app.get(/^\/cinema21\/movie\/(\d{2}[A-Z0-9]{4})\/city\/(\d{1,4})(?:\/)?$/, funct
 	cinema21(req, res).movieByCity(movie_id, city_id);
 });
 
+// http://localhost:3000/images/movie/12AVES/12AVES_100_147.jpg
+// i should have come up with better directory structure
+// such as: images/cinema21/movie_id/width_height.ext
+app.get(/^\/(images\/movie\/(?:\d{2}[A-Z0-9]{4})\/(?:\d{2}[A-Z0-9]{4}).+\.(?:jpg|jpeg|png))$/, function(req, res){
+	console.log(req.params);
+	res.sendfile(req.params[0], function(err){
+		if (err) {
+			console.log(err.stack);
+			res.send(404);
+		}
+	});
+});
+
 //*
 app.listen(3000, function(){
   console.log("Express server listening on port %d in %s mode", app.address().port, app.settings.env);
