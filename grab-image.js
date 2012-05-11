@@ -20,7 +20,7 @@ function extractImageInformation(url) {
 	try {
 		image.width = parseInt(params.width);
 		image.height = parseInt(params.height);
-		image.ext = params.images.toLowerCase().match(/\.(?:jpg|jpeg|png)/)[0];
+		image.ext = params.images.toLowerCase().match(/\.(?:jpg|jpeg|png)$/)[0];
 	} catch (e) {
 		console.log(e.stack);
 	}
@@ -30,9 +30,9 @@ function extractImageInformation(url) {
 
 /**
  * @param object movie movie detail (movie id is mandatory)
- * @param object image image detail (resolution, name, extension)
+ * @param function callback function whom should accept file location
  */
-function storeMovieImage(movie) {
+function storeMovieImage(movie, cb) {
 	var createFile = false;
 
 	// create path
@@ -60,23 +60,33 @@ function storeMovieImage(movie) {
 		}
 
 		if (createFile) {
-			file_path += '/' + [movie.id, image.width, image.height].join('_') + '.' + image.ext;
+			var image = extractImageInformation(movie.image);
+
+			file_path += '/' + [movie.id, image.width, image.height].join('_') + image.ext;
 			console.log('create file. path: ', file_path);
 
 			path.exists(file_path, function(exists){
 				if (!exists) {
 					console.log('file created.');
-					request(movie.url).pipe(fs.createWriteStream(path, {mode: 0755}));
+					request(movie.image).pipe(fs.createWriteStream(file_path, {mode: 0755}));
 				} else {
 					console.log('file already exist.');
+				}
+
+				if (typeof cb == "function") {
+					console.log('storeMovieImage callback is present. calling it...');
+					cb(file_path);
+				} else {
+					console.log('no callback present at storeMovieImage.');
 				}
 			});
 		}
 	});
 }
+
 module.exports = storeMovieImage;
 
-
-console.log(extractImageInformation(movie.url));
-
-storeMovieImage(movie);
+/*
+// http://m.21cineplex.com/image_preview.php?type=movie&images=12AVES.jpg&width=100&height=147
+storeMovieImage({id:'12AVES', image: 'http://m.21cineplex.com/image_preview.php?type=movie&images=12AVES.jpg&width=100&height=147'});
+*/

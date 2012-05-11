@@ -3,7 +3,8 @@ var request = require('request'),
 		jsdom = require('jsdom'),
 		at_storage = require('./at_storage'),
 		events = require('events'),
-		emitter = new events.EventEmitter;
+		emitter = new events.EventEmitter,
+		storeMovieImage = require('./grab-image');
 
 function Cinema21(req, res) {
 	// private variable, reference to Cinema21 object
@@ -33,7 +34,7 @@ function Cinema21(req, res) {
 	var storageClient;
 
 	// *detail* should be re-evaluate every 6 hours
-	var secondBeforeExpire = 10;
+	var secondBeforeExpire = 60 * 60;
 
 	// private variable
 	var city_id = 10; // Jakarta, by default
@@ -1162,19 +1163,27 @@ function Movie(caller) {
 			}
 		}
 
-		caller.getStorageClient().hmset(key, affectedAttributes, function(err, result){
-			if (err) {
-				console.log('Unable to store movie detail to redis');
-			}
+		// at this point movie attributes is completed
+		// fetch movie image and store it into local storage
+		// and overwrite movie image url with local image path
+		storeMovieImage(attributes, function(imageLocalPath){
+			self.setAttribute('image', imageLocalPath);
 
-			if (result == 'OK') {
-				console.log('Movie detail successfully saved to redis');
-			}
+			caller.getStorageClient().hmset(key, affectedAttributes, function(err, result){
+				if (err) {
+					console.log('Unable to store movie detail to redis');
+				}
+
+				if (result == 'OK') {
+					console.log('Movie detail successfully saved to redis');
+				}
+			});
+
+			// could also be a callback, 
+			// instead of triggering event
+			emitter.emit('movieDetailDone', attributes);
 		});
 
-		// could also be a callback, 
-		// instead of triggering event
-		emitter.emit('movieDetailDone', attributes);
 	};
 }
 

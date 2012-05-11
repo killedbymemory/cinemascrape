@@ -46,3 +46,7 @@ node-redis
 https://github.com/mranney/node_redis
 http://simonwillison.net/static/2010/redis-tutorial/
 http://howtonode.org/node-redis-fun
+
+stream and pipe (currently working on image grabber)
+http://dailyjs.com/2012/03/08/unix-node-pipes/
+http://docs.nodejitsu.com/articles/advanced/streams/how-to-use-stream-pipe
