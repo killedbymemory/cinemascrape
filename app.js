@@ -92,6 +92,37 @@ app.get(/^\/cinema21\/movie\/(\d{2}[A-Z0-9]{4})\/city\/(\d{1,4})(?:\/)?$/, funct
 // i should have come up with better directory structure
 // such as: images/cinema21/movie_id/width_height.ext
 app.get(/^\/(images\/movie\/(?:\d{2}[A-Z0-9]{4})\/(?:\d{2}[A-Z0-9]{4}).+\.(?:jpg|jpeg|png))$/, function(req, res){
+	/**
+	 * alternatively we can do it like this,
+	 * but not having client browser to cache the
+	 * image (it'll keeps request the same image over-and-over
+	 * again)
+	 */
+	/*
+	var fs = require('fs');
+	var readStream = fs.createReadStream(req.params[0]);
+	console.log('disini nih');
+	debugger;
+	readStream.pipe(res);
+	return;
+	*/
+
+	/**
+	 * i prefer doing it this way,
+	 * because express handle it and put proper 
+	 * response header (so client browser will cache etc):
+	 *
+	 * HTTP/1.1 200 OK
+	 * X-Powered-By: Express
+	 * Date: Fri, 11 May 2012 08:02:05 GMT
+	 * Cache-Control: public, max-age=0
+	 * Last-Modified: Fri, 11 May 2012 07:24:35 GMT
+	 * Etag: "17505-1336721075000"
+	 * Content-Type: image/jpeg
+	 * Accept-Ranges: bytes
+	 * Content-Length: 17505
+	 * Connection: keep-alive
+	 */
 	console.log(req.params);
 	res.sendfile(req.params[0], function(err){
 		if (err) {
