@@ -1166,8 +1166,20 @@ function Movie(caller) {
 		// at this point movie attributes is completed
 		// fetch movie image and store it into local storage
 		// and overwrite movie image url with local image path
+		// 
+		// imageLocalPath is relative path
 		storeMovieImage(attributes, function(imageLocalPath){
-			self.setAttribute('image', imageLocalPath);
+			// in order to build a proper url
+			// we need to get request object of main application
+			// to do so, we have 'caller' variable whom
+			// passed when this model is instantiated.
+			// 
+			// 'caller' is Cinema21 object and it's hold
+			// request object
+			var host = caller.req.headers.host;
+			var tls = caller.req.connection.encrypted;
+			var url = 'http' + (tls ? 's' : '') + '://' + host + '/' +  imageLocalPath;
+			self.setAttribute('image', url);
 
 			caller.getStorageClient().hmset(key, affectedAttributes, function(err, result){
 				if (err) {
