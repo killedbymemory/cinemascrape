@@ -29,6 +29,29 @@ function extractImageInformation(url) {
 }
 
 /**
+ * double the width and height
+ */
+function getBiggerImage(url) {
+	try {
+		// extract query string part of URL
+		var urlComponents = url.match(/^(.*\?)(.*)$/);
+		var baseUrl = urlComponents[1];
+		var querystring = urlComponents[2];
+
+		// parse them
+		var params = qs.parse(querystring);
+		params.width = 2 * parseInt(params.width);
+		params.height = 2 * parseInt(params.height);
+
+		url = baseUrl + qs.stringify(params);
+	} catch (e) {
+		console.log(e.stack);
+	}
+
+	return url;
+}
+
+/**
  * @param object movie movie detail (movie id is mandatory)
  * @param function callback function whom should accept file location
  */
@@ -60,7 +83,8 @@ function storeMovieImage(movie, cb) {
 		}
 
 		if (createFile) {
-			var image = extractImageInformation(movie.image);
+			var url = getBiggerImage(movie.image);
+			var image = extractImageInformation(url);
 
 			file_path += '/' + [movie.id, image.width, image.height].join('_') + image.ext;
 			console.log('create file. path: ', file_path);
@@ -68,7 +92,7 @@ function storeMovieImage(movie, cb) {
 			path.exists(file_path, function(exists){
 				if (!exists) {
 					console.log('file created.');
-					request(movie.image).pipe(fs.createWriteStream(file_path, {mode: 0755}));
+					request(url).pipe(fs.createWriteStream(file_path, {mode: 0755}));
 				} else {
 					console.log('file already exist.');
 				}
@@ -90,3 +114,5 @@ module.exports = storeMovieImage;
 // http://m.21cineplex.com/image_preview.php?type=movie&images=12AVES.jpg&width=100&height=147
 storeMovieImage({id:'12AVES', image: 'http://m.21cineplex.com/image_preview.php?type=movie&images=12AVES.jpg&width=100&height=147'});
 */
+
+//console.log(getBiggerImage('http://m.21cineplex.com/image_preview.php?type=movie&images=12AVES.jpg&width=100&height=147'));
