@@ -92,17 +92,23 @@ function storeMovieImage(movie, cb) {
 			path.exists(file_path, function(exists){
 				if (!exists) {
 					console.log('file created.');
-					request(url).pipe(fs.createWriteStream(file_path, {mode: 0755}));
+					var imageFile = fs.createWriteStream(file_path, {mode: 0755});
+					request(url).pipe(imageFile);
+
+					imageFile.on('close', function(){
+						console.log('file download end. file descriptor closed');
+
+						if (typeof cb == "function") {
+							console.log('storeMovieImage callback is present. calling it...');
+							cb(file_path);
+						} else {
+							console.log('no callback present at storeMovieImage.');
+						}
+					});
 				} else {
 					console.log('file already exist.');
 				}
 
-				if (typeof cb == "function") {
-					console.log('storeMovieImage callback is present. calling it...');
-					cb(file_path);
-				} else {
-					console.log('no callback present at storeMovieImage.');
-				}
 			});
 		}
 	});
