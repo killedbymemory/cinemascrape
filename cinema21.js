@@ -258,54 +258,66 @@ Cinema21.prototype.coming_soon = function() {
 
 		self.fetch(function(err, window){
 			var $ = window.jQuery;
+			var $movies = $('#box_content ol#menu_ol_arrow li');
 
-			$('#box_content ol#menu_ol_arrow li').each(function(index, element){
-				var $element = $(element);
-				var $movie = $('a', $element);
-				console.log($movie.html());
-
-				try {
-					var movie = {
-						id: $movie.attr('href').match(/movie_id=([0-9a-zA-Z]+)/)[1],
-						title: $movie.html()
-					};
-
-					movies.push(movie);
+			/**
+			 * a synchronous approach
+			 * to get movie detail,
+			 * one movie at a time.
+			 *
+			 * by put it this way,
+			 * we only made one request
+			 * at a time to cinema21's
+			 * website.
+			 *
+			 * i also use a movie object
+			 * model, thus I needed to
+			 * duplicate the movie detail
+			 * as its passed by reference
+			 * (object).
+			 *
+			 */
+			function getMovieDetail(movie_id){
+				self.movie(movie_id, function(movie){
+					// 
+					var movie = $.extend({}, movie);
 					console.log(movie);
+					movies.push(movie);
+					console.log("\n\n\n\n" + movie.id + " =========================\n");
 
-					// store movie to storage
-					var key = ['movie', movie.id].join(':');
-					self.getStorageClient().hmset(key, movie, function(err, response){
-						if (err) {
-							console.log('unable to store coming-soon movie');
-						}
+					$movies = $movies.next(); // iterate
 
-						if (response == 'OK') {
-							console.log('coming-soon movie successfuly saved');
-						}
-					});
-				} catch(e) {
-					console.log(e);
-					return;
-				}
-			});
+					if ($movies.length > 0) {
+						movie_id = $movies.first().html().match(/movie_id=([0-9a-zA-Z]+)/)[1];
+						getMovieDetail(movie_id);
+					} else {
+						// movies complete.
+						// store result to storage
+						console.log('store coming soon movies to redis');
+						self.getStorageClient().set('coming_soon', JSON.stringify(movies), function(err, result){
+							if (err) {
+								console.log('fail to store coming-soon movies to redis');
+							}
 
-			// store result to storage
-			console.log('store coming soon movies to redis');
-			self.getStorageClient().set('coming_soon', JSON.stringify(movies), function(err, result){
-				if (err) {
-					console.log('fail to store coming-soon movies to redis');
-				}
+							if (result == 'OK') {
+								console.log('successfully store coming-soon movies to redis. response:', arguments);
 
-				if (result == 'OK') {
-					console.log('successfully store coming-soon movies to redis. response:', arguments);
+								// set an expire to this 'cache'-like item
+								self.expire('coming_soon', function(){
+									self.render(movies);
+								});
+							}
+						});
+					}
+				});
+			}
 
-					// set an expire to this 'cache'-like item
-					self.expire('coming_soon', function(){
-						self.render(movies);
-					});
-				}
-			});
+			if ($movies.length > 0) {
+				debugger;
+				// start from first element
+				var movie_id = $movies.first().html().match(/movie_id=([0-9a-zA-Z]+)/)[1];
+				getMovieDetail(movie_id);
+			}
 		});
 	}
 
@@ -533,28 +545,17 @@ Cinema21.prototype.movie = function(id, cb) {
 			movie.setId(id);
 			movie.$ = $;
 
-			/**
-			 * This method will be called once movie detail 
-			 * extracted from DOM and stored into redis.
-			 *
-			 * When callback is not supplied, the detail
-			 * is directly sent to client via express's response object.
-			 */
-			emitter.on('movieDetailDone', function(detail){
-				self.getStorageClient().set(key, JSON.stringify(detail), function(err, result){
-					console.log('movie detail (string) save to redis. response: ', arguments);
+			try {
+				movie.getDetail(function(detail){
+					self.getStorageClient().set(key, JSON.stringify(detail), function(err, result){
+						console.log(detail.id + ' -- movie detail (string) save to redis. response: ', arguments);
 
-					self.expire(key, function(){
-						render(detail);
+						self.expire(key, function(){
+							render(detail);
+						});
 					});
 				});
-			});
-
-			try {
-				movie.getDetail();
 			} catch(e) {
-				debugger;
-				
 				// take me some time to figure out e.stack -_-"
 				// found it on:
 				// - http://www.senchalabs.org/connect/errorHandler.html
@@ -1135,7 +1136,7 @@ function Movie(caller) {
 		return this.getAttribute('id');
 	};
 
-	this.getDetail = function() {
+	this.getDetail = function(cb) {
 		var $ = this.$;
 		var key = ['movie', this.getId()].join(':');
 
@@ -1189,13 +1190,11 @@ function Movie(caller) {
 				if (result == 'OK') {
 					console.log('Movie detail successfully saved to redis');
 				}
+
+				// a callback, 
+				cb(attributes);
 			});
-
-			// could also be a callback, 
-			// instead of triggering event
-			emitter.emit('movieDetailDone', attributes);
 		});
-
 	};
 }
 
