@@ -90,6 +90,15 @@ function storeMovieImage(movie, cb) {
 			console.log('create file. path: ', file_path);
 
 			path.exists(file_path, function(exists){
+				function response(file_path) {
+						if (typeof cb == "function") {
+							console.log('storeMovieImage callback is present. calling it...');
+							cb(file_path);
+						} else {
+							console.log('no callback present at storeMovieImage.');
+						}
+				}
+
 				if (!exists) {
 					console.log('file created.');
 					var imageFile = fs.createWriteStream(file_path, {mode: 0755});
@@ -97,18 +106,12 @@ function storeMovieImage(movie, cb) {
 
 					imageFile.on('close', function(){
 						console.log('file download end. file descriptor closed');
-
-						if (typeof cb == "function") {
-							console.log('storeMovieImage callback is present. calling it...');
-							cb(file_path);
-						} else {
-							console.log('no callback present at storeMovieImage.');
-						}
+						response(file_path);
 					});
 				} else {
 					console.log('file already exist.');
+					response(file_path);
 				}
-
 			});
 		}
 	});
