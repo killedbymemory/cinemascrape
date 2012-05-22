@@ -1073,6 +1073,10 @@ function Theater(caller) {
       });
     });
 
+    // indicator to help
+    // on async
+    var done = [];
+
     for(var i in movies) {
       var movie = movies[i];
 
@@ -1086,18 +1090,48 @@ function Theater(caller) {
         'schedule'
       ].join(':');
 
-      caller.getStorageClient().set(key, JSON.stringify(movie.schedule), function(err, result){
-        if (err) {
-          console.log("unable to store theater's movie schedule");
-        }
+      /**
+       * this is a way to 'bind' movie
+       * object. (early-binding, cmiiw)
+       *
+       * we create a function that accept
+       * parameter (movie object).
+       *
+       * this function will return another
+       * function who actually uses the
+       * movie object.
+       *
+       * why? why not put the actual
+       * function as a direct callback?
+       *
+       * a call back function whom 
+       * called within another call back
+       * function could can only access
+       * latest state of (a) variable.
+       */
+      function handler(movie) {
+        return function(err, result){
+          if (err) {
+            console.log("unable to store theater's movie schedule");
+          }
 
-        if (result == 'OK') {
-          console.log("theater's movie schedule successfullly saved");
-        }
-      });
-    }
+          if (result == 'OK') {
+            console.log("theater's movie schedule successfullly saved");
+          }
 
-    emitter.emit('theaterNowPlayingDone', movies);
+          caller.movie(movie.id, function(detail){
+            movie = $.extend(movie, detail);
+            done.push(movie.id);
+
+            if (done.length === movies.length) {
+              emitter.emit('theaterNowPlayingDone', movies);
+            }
+          });
+        };
+      }
+
+      caller.getStorageClient().set(key, JSON.stringify(movie.schedule), handler(movie));
+    } 
   };
 }
 
