@@ -378,24 +378,29 @@ Cinema21.prototype.city = function(id) {
         city.$ = $;
 
         response.city = city.getDetail();
-        response.movies = city.getNowPlaying();
         response.theaters = city.getTheaters();
 
-        // store city detail to redis
-        console.log('store city result to redis');
-        self.getStorageClient().set(key, JSON.stringify(response), function(err, result){
-          if (err) {
-            console.log('unable to save city detail.');
-          }
+        // multiple movies is being fetch thus 
+        // lead to async process
+        city.getNowPlaying(function(movies){
+          response.movies = movies;
 
-          if (result == 'OK') {
-            console.log('city detail successfully saved');
+          // store city detail to redis
+          console.log('store city result to redis');
+          self.getStorageClient().set(key, JSON.stringify(response), function(err, result){
+            if (err) {
+              console.log('unable to save city detail.');
+            }
 
-            // set expire to city detail
-            self.expire(key, function(){
-              self.render(response);
-            });
-          }
+            if (result == 'OK') {
+              console.log('city detail successfully saved');
+
+              // set expire to city detail
+              self.expire(key, function(){
+                self.render(response);
+              });
+            }
+          });
         });
     });
   }
@@ -798,38 +803,42 @@ function City(caller) {
     };
   };
 
-  this.getNowPlaying = function() {
+  this.getNowPlaying = function(cb) {
     var movies = [];
 
     // lets fill movies array
     var $ = this.$;
-    
-    try {
-      $('#box_content ol:last li').each(function(){
-        var $movie = $('a', this);
-        var movie = {
-          id: $movie.attr('href').match(/movie_id=([0-9a-zA-Z]+)/)[1],
-          title: $movie.html()
-        };
+    var $movies = $('#box_content ol:last li');
 
+    // asynchronous
+    function getMovieDetail(movie_id){
+      caller.movie(movie_id, function(movie){
+        debugger;
+        var movie = $.extend({}, movie);
+        console.log(movie);
         movies.push(movie);
+        console.log("\n\n\n\n" + movie.id + " =========================\n");
 
-        // store movie to redis
-        console.log('store city now-playing movies');
-        var key = ['movie', movie.id].join(':');
-        caller.getStorageClient().hmset(key, movie, function(err, response){
-          if (err) {
-            console.log('unable to save city now-playing movie.');
-          }
+        $movies = $movies.next(); // iterate
 
-          if (response == 'OK') {
-            console.log('city now-playing movie successfully saved');
-          }
-        });
+        if ($movies.length > 0) {
+          movie_id = $movies.first().html().match(/movie_id=([0-9a-zA-Z]+)/)[1];
+          getMovieDetail(movie_id);
+        } else {
+          // complete
+          cb(movies);
+        }
       });
-    } catch (e) {}
+    }
 
-    return movies;
+    if ($movies.length > 0) {
+      debugger;
+      // start from first element
+      var movie_id = $movies.first().html().match(/movie_id=([0-9a-zA-Z]+)/)[1];
+      getMovieDetail(movie_id);
+    } else {
+      return movies;
+    }
   };
 
   this.getTheaters = function() {
