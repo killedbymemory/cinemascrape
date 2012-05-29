@@ -350,58 +350,63 @@ Cinema21.prototype.city = function(id) {
         // get city name
         var found = false;
 
-        // "Playing at Ujung Pandang"
-        var cityName = $('#box_content div#box_title:last').html();
-        cityName = cityName.match(/Playing at ([a-zA-Z\ ]+)$/i);
-        if (cityName.length && (cityName.length == 2)) {
-          found = true;
-          cityName = cityName[1];
-        }
+        try {
+          // "Playing at Ujung Pandang"
+          var cityName = $('#box_content div#box_title:last').html();
+          cityName = cityName.match(/Playing at ([a-zA-Z\ ]+)$/i);
+          if (cityName.length && (cityName.length == 2)) {
+            found = true;
+            cityName = cityName[1];
+          }
 
-        if (!found) {
-          self.res.send(404);
-          return;
-        }
+          if (!found) {
+            self.res.send(404);
+            return;
+          }
 
-        // we are at correct result page
-        // lets fill response...
-        var response = {
-          city: {},
-          movies: [],
-          theaters: []
-        };
+          // we are at correct result page
+          // lets fill response...
+          var response = {
+            city: {},
+            movies: [],
+            theaters: []
+          };
 
-        // City model
-        var city = self.getCity();
-        city.setId(self.getCityId());
-        city.setName(cityName);
-        city.$ = $;
+          // City model
+          var city = self.getCity();
+          city.setId(self.getCityId());
+          city.setName(cityName);
+          city.$ = $;
 
-        response.city = city.getDetail();
-        response.theaters = city.getTheaters();
+          response.city = city.getDetail();
+          response.theaters = city.getTheaters();
 
-        // multiple movies is being fetch thus 
-        // lead to async process
-        city.getNowPlaying(function(movies){
-          response.movies = movies;
+          // multiple movies is being fetch thus 
+          // lead to async process
+          city.getNowPlaying(function(movies){
+            response.movies = movies;
 
-          // store city detail to redis
-          console.log('store city result to redis');
-          self.getStorageClient().set(key, JSON.stringify(response), function(err, result){
-            if (err) {
-              console.log('unable to save city detail.');
-            }
+            // store city detail to redis
+            console.log('store city result to redis');
+            self.getStorageClient().set(key, JSON.stringify(response), function(err, result){
+              if (err) {
+                console.log('unable to save city detail.');
+              }
 
-            if (result == 'OK') {
-              console.log('city detail successfully saved');
+              if (result == 'OK') {
+                console.log('city detail successfully saved');
 
-              // set expire to city detail
-              self.expire(key, function(){
-                self.render(response);
-              });
-            }
+                // set expire to city detail
+                self.expire(key, function(){
+                  self.render(response);
+                });
+              }
+            });
           });
-        });
+        } catch(e) {
+          console.log(e.stack);
+          self.render(404);
+        }
     });
   }
 
